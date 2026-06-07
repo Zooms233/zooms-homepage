@@ -112,31 +112,56 @@ function getInitialIcon(name) {
 
 const ThemeManager = {
     currentTheme: 'light',
+    themeMode: 'system', // 'light' | 'dark' | 'system'
 
     init() {
-        // 获取存储的主题或跟随系统
         const savedTheme = getStorage(STORAGE_KEYS.THEME, null);
-        if (savedTheme) {
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            // 旧版兼容：直接存的是 light/dark
+            this.themeMode = savedTheme;
             this.currentTheme = savedTheme;
+        } else if (savedTheme && savedTheme.mode) {
+            // 新版：存储 { mode: 'light'|'dark'|'system' }
+            this.themeMode = savedTheme.mode;
+            if (savedTheme.mode === 'system') {
+                this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            } else {
+                this.currentTheme = savedTheme.mode;
+            }
         } else {
-            // 跟随系统主题
+            // 无保存记录 → 跟随系统
+            this.themeMode = 'system';
             this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         this.applyTheme();
 
-        // 监听系统主题变化
+        // 监听系统主题变化（仅 system 模式响应）
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (!getStorage(STORAGE_KEYS.THEME, null)) {
+            if (this.themeMode === 'system') {
                 this.currentTheme = e.matches ? 'dark' : 'light';
                 this.applyTheme();
             }
         });
     },
 
-    toggle() {
-        this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+    setMode(mode) {
+        this.themeMode = mode;
+        if (mode === 'system') {
+            this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            setStorage(STORAGE_KEYS.THEME, { mode: 'system' });
+        } else {
+            this.currentTheme = mode;
+            setStorage(STORAGE_KEYS.THEME, { mode: mode });
+        }
         this.applyTheme();
-        setStorage(STORAGE_KEYS.THEME, this.currentTheme);
+    },
+
+    toggle() {
+        // 快捷切换：在亮色/暗色之间切换（退出 system 模式）
+        this.themeMode = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.currentTheme = this.themeMode;
+        this.applyTheme();
+        setStorage(STORAGE_KEYS.THEME, { mode: this.themeMode });
     },
 
     applyTheme() {
@@ -500,6 +525,7 @@ const SettingsManager = {
     },
 
     open() {
+        this.renderThemeOptions();
         SearchEngine.renderSettings();
         Shortcuts.renderManageList();
         this.overlay.classList.add('active');
@@ -507,6 +533,44 @@ const SettingsManager = {
 
     close() {
         this.overlay.classList.remove('active');
+    },
+
+    renderThemeOptions() {
+        const container = document.getElementById('themeOptions');
+        if (!container) return;
+
+        const modes = [
+            { id: 'light', name: '亮色', icon: 'sun' },
+            { id: 'dark', name: '暗色', icon: 'moon' },
+            { id: 'system', name: '跟随系统', icon: 'monitor' }
+        ];
+
+        container.innerHTML = modes.map(mode => `
+            <div class="theme-option ${ThemeManager.themeMode === mode.id ? 'selected' : ''}"
+                 data-mode="${mode.id}">
+                <div class="theme-option-info">
+                    <div class="theme-option-icon">
+                        <i data-lucide="${mode.icon}"></i>
+                    </div>
+                    <span class="theme-option-name">${mode.name}</span>
+                </div>
+                <svg class="theme-option-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+        `).join('');
+
+        // 重新渲染 lucide 图标
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        container.querySelectorAll('.theme-option').forEach(option => {
+            option.addEventListener('click', () => {
+                ThemeManager.setMode(option.dataset.mode);
+                this.renderThemeOptions();
+            });
+        });
     },
 
     exportData() {
@@ -678,7 +742,18 @@ const FileImportHandler = {
 
                     if (data.theme) {
                         setStorage(STORAGE_KEYS.THEME, data.theme);
-                        ThemeManager.currentTheme = data.theme;
+                        // 兼容旧版（字符串）和新版（对象）格式
+                        if (typeof data.theme === 'string') {
+                            ThemeManager.themeMode = data.theme;
+                            ThemeManager.currentTheme = data.theme;
+                        } else if (data.theme.mode) {
+                            ThemeManager.themeMode = data.theme.mode;
+                            if (data.theme.mode === 'system') {
+                                ThemeManager.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                            } else {
+                                ThemeManager.currentTheme = data.theme.mode;
+                            }
+                        }
                         ThemeManager.applyTheme();
                     }
 

@@ -681,6 +681,70 @@ body {
     opacity: 1;
 }
 
+/* 主题选项 */
+.theme-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.theme-option:hover {
+    background: var(--accent-alpha);
+}
+
+.theme-option.selected {
+    background: var(--accent-alpha);
+    border: 1px solid var(--accent-primary);
+}
+
+.theme-option-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.theme-option-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent-alpha);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary);
+}
+
+.theme-option-icon i,
+.theme-option-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.theme-option-name {
+    font-weight: 500;
+}
+
+.theme-option-check {
+    color: var(--accent-primary);
+    opacity: 0;
+}
+
+.theme-option.selected .theme-option-check {
+    opacity: 1;
+}
+
 /* 快捷方式管理 */
 .shortcuts-manage {
     display: flex;
