@@ -10,7 +10,8 @@
 const STORAGE_KEYS = {
     THEME: 'homepage_theme',
     ENGINE: 'homepage_engine',
-    SHORTCUTS: 'homepage_shortcuts'
+    SHORTCUTS: 'homepage_shortcuts',
+    BACKGROUND: 'homepage_background'
 };
 
 // 默认搜索引擎配置
@@ -416,6 +417,165 @@ const Shortcuts = {
 };
 
 // ============================================
+// 背景管理
+// ============================================
+
+const BackgroundManager = {
+    config: {
+        mode: 'default',   // 'default' | 'image'
+        imageData: null,    // base64 string
+        blur: 4,            // 0-20px
+        opacity: 75         // 50-100 (%)
+    },
+
+    init() {
+        const saved = getStorage(STORAGE_KEYS.BACKGROUND, null);
+        if (saved) {
+            this.config = { ...this.config, ...saved };
+        }
+        this.apply();
+    },
+
+    setMode(mode) {
+        this.config.mode = mode;
+        this.save();
+        this.apply();
+        this.renderSettings();
+    },
+
+    setImage(file) {
+        if (!file || file.size > 2 * 1024 * 1024) {
+            alert('图片大小不能超过 2MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.config.imageData = e.target.result;
+            this.config.mode = 'image';
+            this.save();
+            this.apply();
+            this.renderSettings();
+        };
+        reader.readAsDataURL(file);
+    },
+
+    setBlur(px) {
+        this.config.blur = px;
+        this.save();
+        this.apply();
+    },
+
+    setOpacity(val) {
+        this.config.opacity = val;
+        this.save();
+        this.apply();
+    },
+
+    reset() {
+        this.config = {
+            mode: 'default',
+            imageData: null,
+            blur: 4,
+            opacity: 75
+        };
+        this.save();
+        this.apply();
+        this.renderSettings();
+    },
+
+    save() {
+        setStorage(STORAGE_KEYS.BACKGROUND, this.config);
+    },
+
+    apply() {
+        const bgImage = document.getElementById('bgImage');
+        const bgOverlay = document.getElementById('bgOverlay');
+        if (!bgImage || !bgOverlay) return;
+
+        if (this.config.mode === 'image' && this.config.imageData) {
+            bgImage.style.backgroundImage = `url(${this.config.imageData})`;
+            bgImage.style.filter = `blur(${this.config.blur}px)`;
+            bgImage.style.display = 'block';
+            bgOverlay.style.opacity = this.config.opacity / 100;
+            bgOverlay.style.display = 'block';
+        } else {
+            bgImage.style.backgroundImage = '';
+            bgImage.style.filter = '';
+            bgImage.style.display = 'none';
+            bgOverlay.style.display = 'none';
+        }
+    },
+
+    renderSettings() {
+        // 渲染模式按钮
+        const modeContainer = document.getElementById('bgModeOptions');
+        if (modeContainer) {
+            const modes = [
+                { id: 'default', name: '默认' },
+                { id: 'image', name: '图片' }
+            ];
+            modeContainer.innerHTML = modes.map(m => `
+                <button class="bg-mode-btn ${this.config.mode === m.id ? 'active' : ''}"
+                        data-mode="${m.id}">${m.name}</button>
+            `).join('');
+
+            modeContainer.querySelectorAll('.bg-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.setMode(btn.dataset.mode);
+                });
+            });
+        }
+
+        // 渲染预览
+        const preview = document.getElementById('bgPreview');
+        if (preview) {
+            if (this.config.mode === 'image' && this.config.imageData) {
+                preview.innerHTML = `<img src="${this.config.imageData}" alt="背景预览">`;
+            } else {
+                preview.innerHTML = `<div class="bg-preview-placeholder"><span>默认背景</span></div>`;
+            }
+        }
+
+        // 渲染滑块（仅图片模式显示）
+        const sliders = document.getElementById('bgSliders');
+        if (sliders) {
+            if (this.config.mode === 'image') {
+                sliders.innerHTML = `
+                    <div class="range-group">
+                        <label>模糊度</label>
+                        <input type="range" id="bgBlurRange" min="0" max="20" value="${this.config.blur}">
+                        <span class="range-value">${this.config.blur}px</span>
+                    </div>
+                    <div class="range-group">
+                        <label>遮罩</label>
+                        <input type="range" id="bgOpacityRange" min="30" max="100" value="${this.config.opacity}">
+                        <span class="range-value">${this.config.opacity}%</span>
+                    </div>
+                `;
+
+                document.getElementById('bgBlurRange').addEventListener('input', (e) => {
+                    this.setBlur(parseInt(e.target.value));
+                    e.target.nextElementSibling.textContent = e.target.value + 'px';
+                });
+
+                document.getElementById('bgOpacityRange').addEventListener('input', (e) => {
+                    this.setOpacity(parseInt(e.target.value));
+                    e.target.nextElementSibling.textContent = e.target.value + '%';
+                });
+            } else {
+                sliders.innerHTML = '';
+            }
+        }
+
+        // 重新渲染 lucide 图标
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+};
+
+// ============================================
 // 弹窗管理
 // ============================================
 
@@ -522,9 +682,25 @@ const SettingsManager = {
         // 快捷方式导入导出按钮
         document.getElementById('exportShortcuts').addEventListener('click', () => this.exportShortcuts());
         document.getElementById('importShortcuts').addEventListener('click', () => this.importShortcuts());
+
+        // 背景设置按钮
+        document.getElementById('uploadBgBtn').addEventListener('click', () => {
+            document.getElementById('bgFileInput').click();
+        });
+        document.getElementById('bgFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) BackgroundManager.setImage(file);
+            e.target.value = '';
+        });
+        document.getElementById('resetBgBtn').addEventListener('click', () => {
+            if (confirm('确定要重置背景为默认吗？')) {
+                BackgroundManager.reset();
+            }
+        });
     },
 
     open() {
+        BackgroundManager.renderSettings();
         this.renderThemeOptions();
         SearchEngine.renderSettings();
         Shortcuts.renderManageList();
@@ -578,6 +754,7 @@ const SettingsManager = {
             theme: getStorage(STORAGE_KEYS.THEME, 'light'),
             engine: getStorage(STORAGE_KEYS.ENGINE, 'google'),
             shortcuts: getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS),
+            background: getStorage(STORAGE_KEYS.BACKGROUND, null),
             exportDate: new Date().toISOString()
         };
 
@@ -599,6 +776,7 @@ const SettingsManager = {
             localStorage.removeItem(STORAGE_KEYS.THEME);
             localStorage.removeItem(STORAGE_KEYS.ENGINE);
             localStorage.removeItem(STORAGE_KEYS.SHORTCUTS);
+            localStorage.removeItem(STORAGE_KEYS.BACKGROUND);
             location.reload();
         }
     },
@@ -768,6 +946,12 @@ const FileImportHandler = {
                         Shortcuts.render();
                     }
 
+                    if (data.background) {
+                        setStorage(STORAGE_KEYS.BACKGROUND, data.background);
+                        BackgroundManager.config = { ...BackgroundManager.config, ...data.background };
+                        BackgroundManager.apply();
+                    }
+
                     alert('配置导入成功！');
                     location.reload();
                 } catch (err) {
@@ -795,6 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初始化各模块
     ThemeManager.init();
+    BackgroundManager.init();
     SearchEngine.init();
     Shortcuts.init();
     ModalManager.init();

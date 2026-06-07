@@ -7,11 +7,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+    <!-- 背景层 -->
+    <div class="bg-image" id="bgImage"></div>
+    <div class="bg-overlay" id="bgOverlay"></div>
+
     <!-- 主题切换按钮 -->
     <button class="theme-toggle" id="themeToggle" title="切换主题">
         <i data-lucide="sun" class="icon-light"></i>
@@ -89,6 +93,31 @@
                 </button>
             </div>
             <div class="settings-content">
+                <div class="settings-section">
+                    <h3>背景设置</h3>
+                    <p class="settings-desc">自定义主页背景</p>
+                    <div class="bg-mode-options" id="bgModeOptions">
+                        <!-- 通过JS生成 -->
+                    </div>
+                    <div class="bg-preview" id="bgPreview">
+                        <div class="bg-preview-placeholder">
+                            <span>默认背景</span>
+                        </div>
+                    </div>
+                    <div id="bgSliders">
+                        <!-- 通过JS生成 -->
+                    </div>
+                    <div class="shortcuts-actions" style="margin-top: 0.75rem;">
+                        <button class="btn btn-secondary btn-sm" id="uploadBgBtn">
+                            <i data-lucide="image"></i>
+                            上传图片
+                        </button>
+                        <button class="btn btn-secondary btn-sm" id="resetBgBtn">
+                            <i data-lucide="rotate-ccw"></i>
+                            重置
+                        </button>
+                    </div>
+                </div>
                 <div class="settings-section">
                     <h3>主题设置</h3>
                     <p class="settings-desc">选择主题模式</p>
@@ -174,7 +203,8 @@
 
     <!-- 隐藏的文件输入 -->
     <input type="file" id="fileInput" accept=".json" style="display: none;">
+    <input type="file" id="bgFileInput" accept="image/*" style="display: none;">
 
-    <script src="js/main.js?v=2"></script>
+    <script src="js/main.js?v=3"></script>
 </body>
 </html>
