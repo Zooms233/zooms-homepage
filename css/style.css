@@ -117,7 +117,7 @@ html {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Outfit', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     min-height: 100vh;
@@ -127,6 +127,38 @@ body {
     padding: 2rem;
     transition: background-color 0.3s ease, color 0.3s ease;
     overflow-x: hidden;
+    position: relative;
+}
+
+/* 背景噪点纹理 */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+}
+
+[data-theme="dark"] body::before {
+    opacity: 0.04;
+}
+
+/* 暗色主题径向光晕 */
+[data-theme="dark"] body::after {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
 }
 
 /* 自定义滚动条 */
@@ -173,7 +205,7 @@ body {
 .theme-toggle:hover {
     background: var(--accent-alpha);
     border-color: var(--accent-primary);
-    transform: scale(1.05);
+    transform: scale(1.05) rotate(15deg);
 }
 
 .theme-toggle:active {
@@ -311,7 +343,10 @@ body {
 
 .search-box:focus-within {
     border-color: var(--search-focus);
-    box-shadow: var(--shadow-lg), 0 0 0 4px var(--accent-alpha);
+    box-shadow:
+        var(--shadow-lg),
+        0 0 0 4px var(--accent-alpha),
+        0 0 30px -5px var(--accent-alpha);
 }
 
 .search-icon {
@@ -347,11 +382,28 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.search-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
 }
 
 .search-btn:hover {
     background: var(--accent-hover);
     transform: scale(1.05);
+}
+
+.search-btn:hover::after {
+    left: 100%;
 }
 
 .search-btn:active {
@@ -394,6 +446,11 @@ body {
     background: var(--accent-primary);
     border-color: var(--accent-primary);
     color: white;
+    box-shadow: 0 2px 8px -2px rgba(217, 119, 6, 0.35);
+}
+
+[data-theme="dark"] .engine-btn.active {
+    box-shadow: 0 2px 8px -2px rgba(245, 158, 11, 0.3);
 }
 
 .engine-icon {
@@ -425,28 +482,52 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
     color: var(--text-primary);
     position: relative;
+    overflow: hidden;
+}
+
+/* 光泽扫过效果 */
+.shortcut-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.08),
+        transparent
+    );
+    transition: left 0.6s ease;
+    z-index: 1;
+}
+
+.shortcut-card:hover::before {
+    left: 100%;
 }
 
 .shortcut-card:hover {
     background: var(--card-hover);
     border-color: var(--accent-primary);
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg), 0 0 20px -8px var(--accent-alpha);
 }
 
 .shortcut-card:active {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
 
 .shortcut-icon {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: var(--accent-alpha);
+    background: linear-gradient(135deg, var(--accent-alpha), var(--accent-light));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -454,6 +535,8 @@ body {
     margin-bottom: 0.75rem;
     color: var(--accent-primary);
     font-weight: 600;
+    position: relative;
+    z-index: 2;
 }
 
 .shortcut-name {
@@ -475,6 +558,20 @@ body {
 .shortcut-card.add-shortcut:hover {
     background: var(--accent-alpha);
     border-color: var(--accent-primary);
+}
+
+/* 添加按钮脉冲提示 */
+@keyframes pulse-border {
+    0%, 100% { border-color: var(--border-color); }
+    50% { border-color: var(--accent-primary); }
+}
+
+.shortcut-card.add-shortcut {
+    animation: pulse-border 3s ease-in-out infinite;
+}
+
+.shortcut-card.add-shortcut:hover {
+    animation: none;
 }
 
 .shortcut-card.add-shortcut .shortcut-icon {
@@ -537,12 +634,14 @@ body {
     right: 0;
     bottom: 0;
     background: var(--modal-overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 200;
     display: flex;
     justify-content: flex-end;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .settings-overlay.active {
@@ -557,7 +656,7 @@ body {
     background: var(--bg-secondary);
     box-shadow: var(--shadow-xl);
     transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
     overflow-y: auto;
 }
 
@@ -638,15 +737,18 @@ body {
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
+    border-left: 3px solid transparent;
 }
 
 .engine-option:hover {
     background: var(--accent-alpha);
+    border-left-color: var(--accent-primary);
 }
 
 .engine-option.selected {
     background: var(--accent-alpha);
     border: 1px solid var(--accent-primary);
+    border-left: 3px solid var(--accent-primary);
 }
 
 .engine-option-info {
@@ -698,15 +800,18 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid transparent;
+    border-left: 3px solid transparent;
 }
 
 .theme-option:hover {
     background: var(--accent-alpha);
+    border-left-color: var(--accent-primary);
 }
 
 .theme-option.selected {
     background: var(--accent-alpha);
     border: 1px solid var(--accent-primary);
+    border-left: 3px solid var(--accent-primary);
 }
 
 .theme-option-info {
@@ -867,13 +972,15 @@ body {
     right: 0;
     bottom: 0;
     background: var(--modal-overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 300;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-overlay.active {
@@ -887,8 +994,8 @@ body {
     background: var(--modal-bg);
     border-radius: 20px;
     box-shadow: var(--shadow-xl);
-    transform: scale(0.9) translateY(20px);
-    transition: transform 0.3s ease;
+    transform: scale(0.92) translateY(16px);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modal-overlay.active .modal {
@@ -952,10 +1059,21 @@ body {
    动画
    ============================================ */
 
-@keyframes fadeIn {
+@keyframes fadeSlideUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
     }
     to {
         opacity: 1;
@@ -964,22 +1082,30 @@ body {
 }
 
 .container {
-    animation: fadeIn 0.5s ease;
+    animation: fadeSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-section {
+    animation: fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+}
+
+.search-engines {
+    animation: fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
 }
 
 .shortcut-card {
-    animation: fadeIn 0.3s ease backwards;
+    animation: fadeSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
-.shortcut-card:nth-child(1) { animation-delay: 0.05s; }
-.shortcut-card:nth-child(2) { animation-delay: 0.1s; }
-.shortcut-card:nth-child(3) { animation-delay: 0.15s; }
-.shortcut-card:nth-child(4) { animation-delay: 0.2s; }
-.shortcut-card:nth-child(5) { animation-delay: 0.25s; }
-.shortcut-card:nth-child(6) { animation-delay: 0.3s; }
-.shortcut-card:nth-child(7) { animation-delay: 0.35s; }
-.shortcut-card:nth-child(8) { animation-delay: 0.4s; }
-.shortcut-card:nth-child(9) { animation-delay: 0.45s; }
+.shortcut-card:nth-child(1) { animation-delay: 0.25s; }
+.shortcut-card:nth-child(2) { animation-delay: 0.3s; }
+.shortcut-card:nth-child(3) { animation-delay: 0.35s; }
+.shortcut-card:nth-child(4) { animation-delay: 0.4s; }
+.shortcut-card:nth-child(5) { animation-delay: 0.45s; }
+.shortcut-card:nth-child(6) { animation-delay: 0.5s; }
+.shortcut-card:nth-child(7) { animation-delay: 0.55s; }
+.shortcut-card:nth-child(8) { animation-delay: 0.6s; }
+.shortcut-card:nth-child(9) { animation-delay: 0.65s; }
 
 /* ============================================
    响应式设计
