@@ -36,7 +36,7 @@ const DEFAULT_ENGINES = [
     {
         id: 'github',
         name: 'GitHub',
-        icon: '⚡',
+        icon: '<',
         url: 'https://github.com/search?q='
     },
     {
