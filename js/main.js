@@ -295,7 +295,7 @@ const Shortcuts = {
             const isEmoji = shortcut.icon && shortcut.icon.length > 1;
 
             return `
-                <a href="${shortcut.url}" class="shortcut-card" target="_self" title="${shortcut.name}">
+                <a href="${shortcut.url}" class="shortcut-card" target="_self" title="${shortcut.name}" style="--i: ${index}">
                     <div class="shortcut-actions">
                         <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -317,7 +317,7 @@ const Shortcuts = {
         }).join('');
 
         const addBtnHtml = `
-            <div class="shortcut-card add-shortcut" id="addShortcutBtn">
+            <div class="shortcut-card add-shortcut" id="addShortcutBtn" style="--i: ${this.shortcuts.length}">
                 <div class="shortcut-icon">+</div>
                 <span class="shortcut-name">添加</span>
             </div>
