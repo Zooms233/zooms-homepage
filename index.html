@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoom's Homepage</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle" id="themeToggle" title="切换主题">
+        <i data-lucide="sun" class="icon-light"></i>
+        <i data-lucide="moon" class="icon-dark"></i>
+    </button>
+
+    <!-- 设置按钮 -->
+    <button class="settings-btn" id="settingsBtn" title="设置">
+        <i data-lucide="settings"></i>
+    </button>
+
+    <!-- 主容器 -->
+    <main class="container">
+        <!-- Logo/标题 -->
+        <div class="logo">
+            <h1>&nbsp;</h1>
+        </div>
+
+        <!-- 搜索区域 -->
+        <div class="search-section">
+            <div class="search-box">
+                <i data-lucide="search" class="search-icon"></i>
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="输入搜索内容..."
+                    autocomplete="off"
+                    autofocus
+                >
+                <button class="search-btn" id="searchBtn">
+                    <i data-lucide="arrow-right"></i>
+                </button>
+            </div>
+
+            <!-- 搜索引擎切换 -->
+            <div class="search-engines" id="searchEngines">
+                <button class="engine-btn active" data-engine="google">
+                    <span class="engine-icon">G</span>
+                    Google
+                </button>
+                <button class="engine-btn" data-engine="baidu">
+                    <span class="engine-icon">B</span>
+                    百度
+                </button>
+                <button class="engine-btn" data-engine="bing">
+                    <span class="engine-icon">b</span>
+                    Bing
+                </button>
+                <button class="engine-btn" data-engine="github">
+                    <span class="engine-icon">⚡</span>
+                    GitHub
+                </button>
+                <button class="engine-btn" data-engine="bilibili">
+                    <span class="engine-icon">▶</span>
+                    B站
+                </button>
+            </div>
+        </div>
+
+        <!-- 快捷方式区域 -->
+        <div class="shortcuts-section">
+            <div class="shortcuts-grid" id="shortcutsGrid">
+                <!-- 快捷方式将通过JS动态生成 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 设置面板 -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2>设置</h2>
+                <button class="close-btn" id="closeSettings">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h3>搜索引擎</h3>
+                    <p class="settings-desc">选择默认搜索引擎</p>
+                    <div class="engine-options" id="engineOptions">
+                        <!-- 通过JS生成 -->
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>快捷方式管理</h3>
+                    <p class="settings-desc">点击快捷方式可编辑或删除</p>
+                    <div class="shortcuts-manage" id="shortcutsManage">
+                        <!-- 通过JS生成 -->
+                    </div>
+                    <div class="shortcuts-actions">
+                        <button class="btn btn-secondary btn-sm" id="exportShortcuts">
+                            <i data-lucide="download"></i>
+                            导出快捷方式
+                        </button>
+                        <button class="btn btn-secondary btn-sm" id="importShortcuts">
+                            <i data-lucide="upload"></i>
+                            导入快捷方式
+                        </button>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>数据管理</h3>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary" id="exportData">
+                            <i data-lucide="download"></i>
+                            导出配置
+                        </button>
+                        <button class="btn btn-secondary" id="importData">
+                            <i data-lucide="upload"></i>
+                            导入配置
+                        </button>
+                        <button class="btn btn-danger" id="resetData">
+                            <i data-lucide="trash-2"></i>
+                            重置所有
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑快捷方式弹窗 -->
+    <div class="modal-overlay" id="shortcutModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加快捷方式</h3>
+                <button class="close-btn" id="closeModal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="shortcutForm">
+                <div class="form-group">
+                    <label for="shortcutName">名称</label>
+                    <input type="text" id="shortcutName" placeholder="例如：GitHub" required>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutUrl">网址</label>
+                    <input type="url" id="shortcutUrl" placeholder="https://github.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="shortcutIcon">图标（可选）</label>
+                    <input type="text" id="shortcutIcon" placeholder="输入emoji或留空使用首字母">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelShortcut">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+                <input type="hidden" id="editIndex" value="-1">
+            </form>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <script src="js/main.js"></script>
+</body>
+</html>

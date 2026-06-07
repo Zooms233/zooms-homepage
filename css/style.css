@@ -1,0 +1,988 @@
+/* ============================================
+   浏览器主页样式 - Claude风格设计
+   ============================================ */
+
+/* CSS变量 - 亮色主题 */
+:root,
+[data-theme="light"] {
+    /* 背景色 */
+    --bg-primary: #faf9f7;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f3f2f0;
+
+    /* 文字色 */
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+
+    /* 主色调 - 琥珀橙 */
+    --accent-primary: #d97706;
+    --accent-hover: #b45309;
+    --accent-light: #fef3c7;
+    --accent-alpha: rgba(217, 119, 6, 0.1);
+
+    /* 边框色 */
+    --border-color: #e5e5e5;
+    --border-hover: #d1d1d1;
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+    /* 搜索框 */
+    --search-bg: #ffffff;
+    --search-border: #e5e5e5;
+    --search-focus: #d97706;
+
+    /* 快捷方式卡片 */
+    --card-bg: #ffffff;
+    --card-hover: #f9fafb;
+
+    /* 按钮 */
+    --btn-primary-bg: #d97706;
+    --btn-primary-hover: #b45309;
+    --btn-secondary-bg: #f3f2f0;
+    --btn-secondary-hover: #e5e5e5;
+    --btn-danger-bg: #ef4444;
+    --btn-danger-hover: #dc2626;
+
+    /* 弹窗 */
+    --modal-bg: #ffffff;
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+
+    /* 滚动条 */
+    --scrollbar-track: #f3f2f0;
+    --scrollbar-thumb: #d1d1d1;
+}
+
+/* CSS变量 - 暗色主题 */
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3a3a3a;
+
+    --text-primary: #f5f5f5;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+
+    --accent-primary: #f59e0b;
+    --accent-hover: #d97706;
+    --accent-light: #451a03;
+    --accent-alpha: rgba(245, 158, 11, 0.15);
+
+    --border-color: #404040;
+    --border-hover: #525252;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+
+    --search-bg: #2d2d2d;
+    --search-border: #404040;
+    --search-focus: #f59e0b;
+
+    --card-bg: #2d2d2d;
+    --card-hover: #3a3a3a;
+
+    --btn-primary-bg: #f59e0b;
+    --btn-primary-hover: #d97706;
+    --btn-secondary-bg: #3a3a3a;
+    --btn-secondary-hover: #4a4a4a;
+    --btn-danger-bg: #dc2626;
+    --btn-danger-hover: #b91c1c;
+
+    --modal-bg: #2d2d2d;
+    --modal-overlay: rgba(0, 0, 0, 0.7);
+
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #525252;
+}
+
+/* ============================================
+   基础样式
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* ============================================
+   主题切换按钮
+   ============================================ */
+
+.theme-toggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+}
+
+.theme-toggle:hover {
+    background: var(--accent-alpha);
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle .icon-light,
+.theme-toggle .icon-dark {
+    position: absolute;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+[data-theme="light"] .theme-toggle .icon-light {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+[data-theme="light"] .theme-toggle .icon-dark {
+    opacity: 0;
+    transform: rotate(90deg);
+}
+
+[data-theme="dark"] .theme-toggle .icon-light {
+    opacity: 0;
+    transform: rotate(-90deg);
+}
+
+[data-theme="dark"] .theme-toggle .icon-dark {
+    opacity: 1;
+    transform: rotate(0deg);
+}
+
+/* ============================================
+   设置按钮
+   ============================================ */
+
+.settings-btn {
+    position: fixed;
+    top: 1.5rem;
+    right: 5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+}
+
+.settings-btn:hover {
+    background: var(--accent-alpha);
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.settings-btn:active {
+    transform: scale(0.95);
+}
+
+.settings-btn i {
+    transition: transform 0.3s ease;
+}
+
+.settings-btn:hover i {
+    transform: rotate(45deg);
+}
+
+/* ============================================
+   主容器
+   ============================================ */
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin-top: 10vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ============================================
+   Logo/标题
+   ============================================ */
+
+.logo {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.logo h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.tagline {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-weight: 400;
+}
+
+/* ============================================
+   搜索区域
+   ============================================ */
+
+.search-section {
+    width: 100%;
+    margin-bottom: 3rem;
+}
+
+.search-box {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    background: var(--search-bg);
+    border: 2px solid var(--search-border);
+    border-radius: 16px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.search-box:focus-within {
+    border-color: var(--search-focus);
+    box-shadow: var(--shadow-lg), 0 0 0 4px var(--accent-alpha);
+}
+
+.search-icon {
+    color: var(--text-tertiary);
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    color: var(--text-primary);
+    padding: 0.5rem 0;
+}
+
+.search-box input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.search-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent-primary);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.search-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.search-btn:active {
+    transform: scale(0.95);
+}
+
+/* ============================================
+   搜索引擎切换
+   ============================================ */
+
+.search-engines {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.engine-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 100px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.engine-btn:hover {
+    background: var(--accent-alpha);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.engine-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.engine-icon {
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+/* ============================================
+   快捷方式区域
+   ============================================ */
+
+.shortcuts-section {
+    width: 100%;
+}
+
+.shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.shortcut-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.shortcut-card:hover {
+    background: var(--card-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.shortcut-card:active {
+    transform: translateY(-2px);
+}
+
+.shortcut-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--accent-alpha);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.shortcut-name {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    text-align: center;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 添加快捷方式按钮 */
+.shortcut-card.add-shortcut {
+    border-style: dashed;
+    background: transparent;
+}
+
+.shortcut-card.add-shortcut:hover {
+    background: var(--accent-alpha);
+    border-color: var(--accent-primary);
+}
+
+.shortcut-card.add-shortcut .shortcut-icon {
+    background: transparent;
+    font-size: 2rem;
+    color: var(--text-tertiary);
+}
+
+.shortcut-card.add-shortcut:hover .shortcut-icon {
+    color: var(--accent-primary);
+}
+
+/* 快捷方式编辑/删除按钮 */
+.shortcut-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.shortcut-card:hover .shortcut-actions {
+    opacity: 1;
+}
+
+.shortcut-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.shortcut-action-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+}
+
+.shortcut-action-btn.delete:hover {
+    background: var(--btn-danger-bg);
+}
+
+/* ============================================
+   设置面板
+   ============================================ */
+
+.settings-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--modal-overlay);
+    z-index: 200;
+    display: flex;
+    justify-content: flex-end;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.settings-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.settings-panel {
+    width: 400px;
+    max-width: 90vw;
+    height: 100%;
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-xl);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+.settings-overlay.active .settings-panel {
+    transform: translateX(0);
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background: var(--accent-alpha);
+    color: var(--accent-primary);
+}
+
+.settings-content {
+    padding: 1.5rem;
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.settings-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* 引擎选项 */
+.engine-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.engine-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.engine-option:hover {
+    background: var(--accent-alpha);
+}
+
+.engine-option.selected {
+    background: var(--accent-alpha);
+    border: 1px solid var(--accent-primary);
+}
+
+.engine-option-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.engine-option-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent-alpha);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--accent-primary);
+}
+
+.engine-option-name {
+    font-weight: 500;
+}
+
+.engine-option-check {
+    color: var(--accent-primary);
+    opacity: 0;
+}
+
+.engine-option.selected .engine-option-check {
+    opacity: 1;
+}
+
+/* 快捷方式管理 */
+.shortcuts-manage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shortcut-manage-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+}
+
+.shortcut-manage-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.shortcut-manage-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accent-alpha);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.shortcut-manage-name {
+    font-weight: 500;
+}
+
+.shortcut-manage-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 数据管理按钮 */
+.data-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* ============================================
+   按钮样式
+   ============================================ */
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--btn-primary-bg);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--btn-primary-hover);
+}
+
+.btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--btn-secondary-hover);
+}
+
+.btn-danger {
+    background: var(--btn-danger-bg);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--btn-danger-hover);
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.shortcuts-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.shortcuts-actions .btn {
+    flex: 1;
+}
+
+/* ============================================
+   弹窗
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--modal-overlay);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    width: 400px;
+    max-width: 90vw;
+    background: var(--modal-bg);
+    border-radius: 20px;
+    box-shadow: var(--shadow-xl);
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.form-group {
+    padding: 1rem 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-alpha);
+}
+
+.form-group input::placeholder {
+    color: var(--text-tertiary);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem 1.5rem;
+}
+
+/* ============================================
+   动画
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container {
+    animation: fadeIn 0.5s ease;
+}
+
+.shortcut-card {
+    animation: fadeIn 0.3s ease backwards;
+}
+
+.shortcut-card:nth-child(1) { animation-delay: 0.05s; }
+.shortcut-card:nth-child(2) { animation-delay: 0.1s; }
+.shortcut-card:nth-child(3) { animation-delay: 0.15s; }
+.shortcut-card:nth-child(4) { animation-delay: 0.2s; }
+.shortcut-card:nth-child(5) { animation-delay: 0.25s; }
+.shortcut-card:nth-child(6) { animation-delay: 0.3s; }
+.shortcut-card:nth-child(7) { animation-delay: 0.35s; }
+.shortcut-card:nth-child(8) { animation-delay: 0.4s; }
+.shortcut-card:nth-child(9) { animation-delay: 0.45s; }
+
+/* ============================================
+   响应式设计
+   ============================================ */
+
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
+    .container {
+        margin-top: 5vh;
+    }
+
+    .logo h1 {
+        font-size: 3rem;
+    }
+
+    .search-engines {
+        gap: 0.375rem;
+    }
+
+    .engine-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .shortcuts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .shortcut-card {
+        padding: 1rem 0.5rem;
+    }
+
+    .shortcut-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+
+    .theme-toggle {
+        top: 1rem;
+        right: 1rem;
+        width: 40px;
+        height: 40px;
+    }
+
+    .settings-btn {
+        top: 1rem;
+        right: 4rem;
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo h1 {
+        font-size: 2.5rem;
+    }
+
+    .search-box {
+        padding: 0.625rem 0.75rem;
+    }
+
+    .shortcuts-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
