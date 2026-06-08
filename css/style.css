@@ -210,72 +210,13 @@ body::before {
 }
 
 /* ============================================
-   主题切换按钮
-   ============================================ */
-
-.theme-toggle {
-    position: fixed;
-    top: 1.5rem;
-    right: 1.5rem;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 1px solid var(--border-color);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    z-index: 100;
-    box-shadow: var(--shadow-md);
-}
-
-.theme-toggle:hover {
-    background: var(--accent-alpha);
-    border-color: var(--accent-primary);
-    transform: scale(1.05) rotate(15deg);
-}
-
-.theme-toggle:active {
-    transform: scale(0.95);
-}
-
-.theme-toggle .icon-light,
-.theme-toggle .icon-dark {
-    position: absolute;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-[data-theme="light"] .theme-toggle .icon-light {
-    opacity: 1;
-    transform: rotate(0deg);
-}
-
-[data-theme="light"] .theme-toggle .icon-dark {
-    opacity: 0;
-    transform: rotate(90deg);
-}
-
-[data-theme="dark"] .theme-toggle .icon-light {
-    opacity: 0;
-    transform: rotate(-90deg);
-}
-
-[data-theme="dark"] .theme-toggle .icon-dark {
-    opacity: 1;
-    transform: rotate(0deg);
-}
-
-/* ============================================
    设置按钮
    ============================================ */
 
 .settings-btn {
     position: fixed;
     top: 1.5rem;
-    right: 5rem;
+    right: 1.5rem;
     width: 48px;
     height: 48px;
     border-radius: 50%;
@@ -307,6 +248,47 @@ body::before {
 
 .settings-btn:hover i {
     transform: rotate(45deg);
+}
+
+/* ============================================
+   快捷入口编辑模式按钮
+   ============================================ */
+
+.edit-mode-btn {
+    position: fixed;
+    top: 1.5rem;
+    right: 5rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 100;
+    box-shadow: var(--shadow-md);
+}
+
+.edit-mode-btn:hover {
+    background: var(--accent-alpha);
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.edit-mode-btn:active {
+    transform: scale(0.95);
+}
+
+.edit-mode-btn i {
+    transition: transform 0.3s ease;
+}
+
+.edit-mode-btn:hover i {
+    transform: rotate(-15deg);
 }
 
 /* ============================================
@@ -1284,14 +1266,14 @@ body::before {
         font-size: 1.25rem;
     }
 
-    .theme-toggle {
+    .settings-btn {
         top: 1rem;
         right: 1rem;
         width: 40px;
         height: 40px;
     }
 
-    .settings-btn {
+    .edit-mode-btn {
         top: 1rem;
         right: 4rem;
         width: 40px;

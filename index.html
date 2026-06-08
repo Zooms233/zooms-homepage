@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="stylesheet" href="css/style.css?v=6">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -16,15 +16,14 @@
     <div class="bg-image" id="bgImage"></div>
     <div class="bg-overlay" id="bgOverlay"></div>
 
-    <!-- 主题切换按钮 -->
-    <button class="theme-toggle" id="themeToggle" title="切换主题">
-        <i data-lucide="sun" class="icon-light"></i>
-        <i data-lucide="moon" class="icon-dark"></i>
-    </button>
-
     <!-- 设置按钮 -->
     <button class="settings-btn" id="settingsBtn" title="设置">
         <i data-lucide="settings"></i>
+    </button>
+
+    <!-- 快捷入口编辑模式按钮 -->
+    <button class="edit-mode-btn" id="editModeBtn" title="编辑模式">
+        <i data-lucide="pencil"></i>
     </button>
 
     <!-- 主容器 -->
@@ -205,6 +204,6 @@
     <input type="file" id="fileInput" accept=".json" style="display: none;">
     <input type="file" id="bgFileInput" accept="image/*" style="display: none;">
 
-    <script src="js/main.js?v=4"></script>
+    <script src="js/main.js?v=5"></script>
 </body>
 </html>

@@ -987,9 +987,10 @@ document.addEventListener('DOMContentLoaded', () => {
     SearchManager.init();
     FileImportHandler.init();
 
-    // 主题切换按钮事件
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        ThemeManager.toggle();
+    // 快捷入口编辑模式按钮事件（占位，后续实现）
+    document.getElementById('editModeBtn').addEventListener('click', () => {
+        // TODO: 实现快捷入口编辑模式
+        console.log('编辑模式功能开发中...');
     });
 
     console.log('🚀 Zoom\'s Homepage 已加载');
