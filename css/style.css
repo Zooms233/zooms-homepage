@@ -619,6 +619,26 @@ body::before {
     pointer-events: auto;
 }
 
+/* 拖拽排序样式 */
+.edit-mode .shortcut-card {
+    cursor: grab;
+}
+
+.edit-mode .shortcut-card:active {
+    cursor: grabbing;
+}
+
+.shortcut-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.shortcut-card.drag-over {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-alpha);
+    transform: scale(1.05);
+}
+
 .shortcut-action-btn {
     width: 24px;
     height: 24px;
@@ -1231,6 +1251,10 @@ body::before {
 .shortcut-card {
     animation: fadeSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) backwards;
     animation-delay: calc(0.25s + var(--i, 0) * 0.05s);
+}
+
+.no-animation .shortcut-card {
+    animation: none;
 }
 
 /* ============================================

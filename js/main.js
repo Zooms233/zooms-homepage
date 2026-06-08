@@ -249,10 +249,12 @@ const SearchEngine = {
 const Shortcuts = {
     shortcuts: [],
     editMode: false,
+    dragIndex: null,
 
     init() {
         this.shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
         this.render();
+        this.initDragAndDrop();
     },
 
     toggleEditMode() {
@@ -261,6 +263,9 @@ const Shortcuts = {
         const btn = document.getElementById('editModeBtn');
         btn.classList.toggle('active', this.editMode);
         btn.title = this.editMode ? '退出编辑模式' : '编辑模式';
+        document.querySelectorAll('.shortcut-card:not(.add-shortcut)').forEach(card => {
+            card.setAttribute('draggable', this.editMode);
+        });
     },
 
     add(name, url, icon = '') {
@@ -295,16 +300,22 @@ const Shortcuts = {
         this.render();
     },
 
-    render() {
+    render(skipAnimation = false) {
         const grid = document.getElementById('shortcutsGrid');
         if (!grid) return;
+
+        if (skipAnimation) {
+            grid.classList.add('no-animation');
+        } else {
+            grid.classList.remove('no-animation');
+        }
 
         const shortcutsHtml = this.shortcuts.map((shortcut, index) => {
             const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
             const isEmoji = shortcut.icon && shortcut.icon.length > 1;
 
             return `
-                <a href="${shortcut.url}" class="shortcut-card" target="_self" title="${shortcut.name}" style="--i: ${index}">
+                <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" target="_self" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${index}">
                     <div class="shortcut-actions">
                         <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -370,6 +381,58 @@ const Shortcuts = {
                 }
             });
         });
+    },
+
+    initDragAndDrop() {
+        const grid = document.getElementById('shortcutsGrid');
+        if (!grid) return;
+
+        grid.addEventListener('dragstart', (e) => {
+            if (!this.editMode) return;
+            const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
+            if (!card) return;
+            this.dragIndex = parseInt(card.dataset.index);
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dragIndex);
+        });
+
+        grid.addEventListener('dragover', (e) => {
+            if (!this.editMode || this.dragIndex === null) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
+            if (!card) return;
+            const overIndex = parseInt(card.dataset.index);
+            if (overIndex === this.dragIndex) return;
+            // 移除其他卡片的 drag-over 样式
+            grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            card.classList.add('drag-over');
+        });
+
+        grid.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (!this.editMode || this.dragIndex === null) return;
+            const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
+            if (!card) return;
+            const toIndex = parseInt(card.dataset.index);
+            if (toIndex !== this.dragIndex) {
+                this.reorder(this.dragIndex, toIndex);
+            }
+        });
+
+        grid.addEventListener('dragend', () => {
+            this.dragIndex = null;
+            grid.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+            grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        });
+    },
+
+    reorder(fromIndex, toIndex) {
+        const item = this.shortcuts.splice(fromIndex, 1)[0];
+        this.shortcuts.splice(toIndex, 0, item);
+        this.save();
+        this.render(true);
     },
 
     renderManageList() {
