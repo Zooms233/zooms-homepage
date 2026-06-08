@@ -291,6 +291,12 @@ body::before {
     transform: rotate(-15deg);
 }
 
+.edit-mode-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
 /* ============================================
    主容器
    ============================================ */
@@ -605,10 +611,12 @@ body::before {
     gap: 0.25rem;
     opacity: 0;
     transition: opacity 0.2s ease;
+    pointer-events: none;
 }
 
-.shortcut-card:hover .shortcut-actions {
+.edit-mode .shortcut-card:hover .shortcut-actions {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .shortcut-action-btn {

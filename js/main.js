@@ -248,10 +248,19 @@ const SearchEngine = {
 
 const Shortcuts = {
     shortcuts: [],
+    editMode: false,
 
     init() {
         this.shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
         this.render();
+    },
+
+    toggleEditMode() {
+        this.editMode = !this.editMode;
+        document.body.classList.toggle('edit-mode', this.editMode);
+        const btn = document.getElementById('editModeBtn');
+        btn.classList.toggle('active', this.editMode);
+        btn.title = this.editMode ? '退出编辑模式' : '编辑模式';
     },
 
     add(name, url, icon = '') {
@@ -987,10 +996,20 @@ document.addEventListener('DOMContentLoaded', () => {
     SearchManager.init();
     FileImportHandler.init();
 
-    // 快捷入口编辑模式按钮事件（占位，后续实现）
+    // 编辑模式按钮事件
     document.getElementById('editModeBtn').addEventListener('click', () => {
-        // TODO: 实现快捷入口编辑模式
-        console.log('编辑模式功能开发中...');
+        Shortcuts.toggleEditMode();
+    });
+
+    // 编辑模式下阻止快捷方式卡片导航
+    document.getElementById('shortcutsGrid').addEventListener('click', (e) => {
+        if (Shortcuts.editMode) {
+            const card = e.target.closest('.shortcut-card');
+            if (card && !e.target.closest('.shortcut-action-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }
     });
 
     console.log('🚀 Zoom\'s Homepage 已加载');
