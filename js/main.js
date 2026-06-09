@@ -253,6 +253,8 @@ const Shortcuts = {
 
     init() {
         this.shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
+        // 迁移旧数据：给没有 page 属性的快捷方式按顺序分配页码
+        this.shortcuts.forEach((s, i) => { if (s.page === undefined) s.page = Math.min(Math.floor(i / 12), 1); });
         this.render();
         this.initDragAndDrop();
     },
@@ -270,14 +272,18 @@ const Shortcuts = {
 
     add(name, url, icon = '') {
         if (this.shortcuts.length >= 24) return;
-        this.shortcuts.push({ name, url, icon });
+        const pageCount = [0, 0];
+        this.shortcuts.forEach(s => { if (s.page < 2) pageCount[s.page]++; });
+        const page = pageCount[0] < 12 ? 0 : 1;
+        this.shortcuts.push({ name, url, icon, page });
         this.save();
         this.render();
     },
 
     edit(index, name, url, icon = '') {
         if (index >= 0 && index < this.shortcuts.length) {
-            this.shortcuts[index] = { name, url, icon };
+            const page = this.shortcuts[index].page;
+            this.shortcuts[index] = { name, url, icon, page };
             this.save();
             this.render();
         }
@@ -311,18 +317,16 @@ const Shortcuts = {
             grid.classList.remove('no-animation');
         }
 
-        const PAGE_SIZE = 12;
         const MAX_SHORTCUTS = 24;
-        const pages = [];
-        for (let i = 0; i < this.shortcuts.length; i += PAGE_SIZE) {
-            pages.push(this.shortcuts.slice(i, i + PAGE_SIZE));
-        }
-        if (pages.length === 0) pages.push([]);
+        const pages = [[], []];
+        this.shortcuts.forEach((s, i) => { const p = s.page || 0; if (p < 2) pages[p].push({ s, i }); });
+        if (pages[0].length === 0 && pages[1].length === 0) pages[0] = [];
 
-        const pagesHtml = pages.map((pageItems, pageIdx) => {
-            const baseIndex = pageIdx * PAGE_SIZE;
-            const cardsHtml = pageItems.map((shortcut, i) => {
-                const index = baseIndex + i;
+        const pagesHtml = pages.filter((_, idx) => idx === 0 || pages[idx].length > 0 || (idx === 1 && pages[0].length >= 12)).map((pageItems, pageIdx) => {
+            const baseIndex = pageIdx === 0 ? 0 : pages[0].length;
+            const cardsHtml = pageItems.map((item, i) => {
+                const shortcut = item.s || item;
+                const index = item.i !== undefined ? item.i : (baseIndex + i);
                 const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
                 return `
                     <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" target="_self" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${i}">
@@ -347,7 +351,7 @@ const Shortcuts = {
             }).join('');
 
             // 当前页未满且未达上限时显示添加按钮
-            const showAdd = pageItems.length < PAGE_SIZE && this.shortcuts.length < MAX_SHORTCUTS;
+            const showAdd = pageItems.length < 12 && this.shortcuts.length < MAX_SHORTCUTS;
             const addBtnHtml = showAdd ? `
                 <div class="shortcut-card add-shortcut" id="addShortcutBtn" style="--i: ${pageItems.length}">
                     <div class="shortcut-icon">+</div>
@@ -450,7 +454,7 @@ const Shortcuts = {
 
             // 拖拽到边缘自动翻页
             const rect = grid.getBoundingClientRect();
-            const edge = 60;
+            const edge = 100;
             if (e.clientX - rect.left < edge) {
                 this._dragScrollDir = -1;
             } else if (rect.right - e.clientX < edge) {
@@ -466,7 +470,7 @@ const Shortcuts = {
                         this._dragScrolling = false;
                         return;
                     }
-                    grid.scrollLeft += this._dragScrollDir * 20;
+                    grid.scrollLeft += this._dragScrollDir * 50;
                     requestAnimationFrame(scroll);
                 };
                 requestAnimationFrame(scroll);
@@ -476,19 +480,24 @@ const Shortcuts = {
         grid.addEventListener('drop', (e) => {
             e.preventDefault();
             if (!this.editMode || this.dragIndex === null) return;
+            const fromPage = this.shortcuts[this.dragIndex].page || 0;
             const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
-            let toIndex;
-            if (card) {
-                toIndex = parseInt(card.dataset.index);
-            } else {
-                const page = e.target.closest('.shortcuts-page');
-                if (!page) return;
-                const pageCards = page.querySelectorAll('.shortcut-card:not(.add-shortcut)');
-                const pageIdx = [...grid.children].indexOf(page);
-                toIndex = pageIdx * 12 + pageCards.length;
-            }
-            if (toIndex !== this.dragIndex) {
+            const pageEl = (card || e.target.closest('.shortcuts-page'));
+            const targetPage = pageEl ? [...grid.children].indexOf(card ? card.closest('.shortcuts-page') : pageEl) : -1;
+            if (targetPage === -1) return;
+            if (fromPage === targetPage) {
+                // 同页：精确位置交换
+                if (!card) return;
+                const toIndex = parseInt(card.dataset.index);
+                if (toIndex === this.dragIndex) return;
                 this.reorder(this.dragIndex, toIndex);
+            } else {
+                // 跨页：改 page 属性，移到数组末尾
+                const item = this.shortcuts.splice(this.dragIndex, 1)[0];
+                item.page = targetPage;
+                this.shortcuts.push(item);
+                this.save();
+                this.render(true);
             }
         });
 
