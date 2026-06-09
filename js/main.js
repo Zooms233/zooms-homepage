@@ -373,7 +373,10 @@ const Shortcuts = {
             if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
             e.preventDefault();
             const direction = e.deltaY > 0 ? 1 : -1;
+            grid.style.scrollSnapType = 'none';
             grid.scrollBy({ left: direction * grid.clientWidth, behavior: 'smooth' });
+            clearTimeout(this._snapRestore);
+            this._snapRestore = setTimeout(() => { grid.style.scrollSnapType = ''; }, 500);
         };
         grid.addEventListener('wheel', this._wheelHandler, { passive: false });
     },
@@ -431,20 +434,59 @@ const Shortcuts = {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
-            if (!card) return;
-            const overIndex = parseInt(card.dataset.index);
-            if (overIndex === this.dragIndex) return;
-            // 移除其他卡片的 drag-over 样式
+            let toIndex;
+            if (card) {
+                toIndex = parseInt(card.dataset.index);
+            } else {
+                const page = e.target.closest('.shortcuts-page');
+                if (!page) return;
+                const pageCards = page.querySelectorAll('.shortcut-card:not(.add-shortcut)');
+                const pageIdx = [...grid.children].indexOf(page);
+                toIndex = pageIdx * 12 + pageCards.length;
+            }
+            if (toIndex === this.dragIndex) return;
             grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-            card.classList.add('drag-over');
+            if (card) card.classList.add('drag-over');
+
+            // 拖拽到边缘自动翻页
+            const rect = grid.getBoundingClientRect();
+            const edge = 60;
+            if (e.clientX - rect.left < edge) {
+                this._dragScrollDir = -1;
+            } else if (rect.right - e.clientX < edge) {
+                this._dragScrollDir = 1;
+            } else {
+                this._dragScrollDir = 0;
+            }
+            if (!this._dragScrolling && this._dragScrollDir !== 0) {
+                this._dragScrolling = true;
+                grid.style.scrollSnapType = 'none';
+                const scroll = () => {
+                    if (this._dragScrollDir === 0 || this.dragIndex === null) {
+                        this._dragScrolling = false;
+                        return;
+                    }
+                    grid.scrollLeft += this._dragScrollDir * 20;
+                    requestAnimationFrame(scroll);
+                };
+                requestAnimationFrame(scroll);
+            }
         });
 
         grid.addEventListener('drop', (e) => {
             e.preventDefault();
             if (!this.editMode || this.dragIndex === null) return;
             const card = e.target.closest('.shortcut-card:not(.add-shortcut)');
-            if (!card) return;
-            const toIndex = parseInt(card.dataset.index);
+            let toIndex;
+            if (card) {
+                toIndex = parseInt(card.dataset.index);
+            } else {
+                const page = e.target.closest('.shortcuts-page');
+                if (!page) return;
+                const pageCards = page.querySelectorAll('.shortcut-card:not(.add-shortcut)');
+                const pageIdx = [...grid.children].indexOf(page);
+                toIndex = pageIdx * 12 + pageCards.length;
+            }
             if (toIndex !== this.dragIndex) {
                 this.reorder(this.dragIndex, toIndex);
             }
@@ -452,6 +494,9 @@ const Shortcuts = {
 
         grid.addEventListener('dragend', () => {
             this.dragIndex = null;
+            this._dragScrollDir = 0;
+            this._dragScrolling = false;
+            grid.style.scrollSnapType = '';
             grid.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
             grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         });
@@ -462,6 +507,14 @@ const Shortcuts = {
         this.shortcuts.splice(toIndex, 0, item);
         this.save();
         this.render(true);
+        // 强制重新吸附到最近的页面
+        const grid = document.getElementById('shortcutsGrid');
+        if (grid) {
+            grid.style.scrollSnapType = '';
+            const pageWidth = grid.clientWidth;
+            const page = Math.round(grid.scrollLeft / pageWidth);
+            grid.scrollLeft = page * pageWidth;
+        }
     },
 
     renderManageList() {

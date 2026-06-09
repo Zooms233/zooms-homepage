@@ -303,7 +303,7 @@ body::before {
 
 .container {
     width: 100%;
-    max-width: 800px;
+    max-width: 840px;
     margin-top: 10vh;
     display: flex;
     flex-direction: column;
@@ -503,6 +503,7 @@ body::before {
     gap: 1rem;
     scroll-snap-align: start;
     align-items: start;
+    padding: 6px 1rem;
 }
 
 .shortcut-card {
