@@ -269,6 +269,7 @@ const Shortcuts = {
     },
 
     add(name, url, icon = '') {
+        if (this.shortcuts.length >= 24) return;
         this.shortcuts.push({ name, url, icon });
         this.save();
         this.render();
@@ -310,43 +311,71 @@ const Shortcuts = {
             grid.classList.remove('no-animation');
         }
 
-        const shortcutsHtml = this.shortcuts.map((shortcut, index) => {
-            const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
-            const isEmoji = shortcut.icon && shortcut.icon.length > 1;
+        const PAGE_SIZE = 12;
+        const MAX_SHORTCUTS = 24;
+        const pages = [];
+        for (let i = 0; i < this.shortcuts.length; i += PAGE_SIZE) {
+            pages.push(this.shortcuts.slice(i, i + PAGE_SIZE));
+        }
+        if (pages.length === 0) pages.push([]);
 
-            return `
-                <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" target="_self" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${index}">
-                    <div class="shortcut-actions">
-                        <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
-                        <button class="shortcut-action-btn delete" data-index="${index}" title="删除">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="shortcut-icon">${iconContent}</div>
-                    <span class="shortcut-name">${shortcut.name}</span>
-                </a>
-            `;
+        const pagesHtml = pages.map((pageItems, pageIdx) => {
+            const baseIndex = pageIdx * PAGE_SIZE;
+            const cardsHtml = pageItems.map((shortcut, i) => {
+                const index = baseIndex + i;
+                const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
+                return `
+                    <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" target="_self" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${i}">
+                        <div class="shortcut-actions">
+                            <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="shortcut-action-btn delete" data-index="${index}" title="删除">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="shortcut-icon">${iconContent}</div>
+                        <span class="shortcut-name">${shortcut.name}</span>
+                    </a>
+                `;
+            }).join('');
+
+            // 当前页未满且未达上限时显示添加按钮
+            const showAdd = pageItems.length < PAGE_SIZE && this.shortcuts.length < MAX_SHORTCUTS;
+            const addBtnHtml = showAdd ? `
+                <div class="shortcut-card add-shortcut" id="addShortcutBtn" style="--i: ${pageItems.length}">
+                    <div class="shortcut-icon">+</div>
+                    <span class="shortcut-name">添加</span>
+                </div>
+            ` : '';
+
+            return `<div class="shortcuts-page">${cardsHtml}${addBtnHtml}</div>`;
         }).join('');
 
-        const addBtnHtml = `
-            <div class="shortcut-card add-shortcut" id="addShortcutBtn" style="--i: ${this.shortcuts.length}">
-                <div class="shortcut-icon">+</div>
-                <span class="shortcut-name">添加</span>
-            </div>
-        `;
-
-        grid.innerHTML = shortcutsHtml + addBtnHtml;
+        grid.innerHTML = pagesHtml;
 
         // 绑定事件
         this.bindEvents();
+
+        // 滚轮翻页
+        this.initWheelPaging(grid);
+    },
+
+    initWheelPaging(grid) {
+        grid.removeEventListener('wheel', this._wheelHandler);
+        this._wheelHandler = (e) => {
+            if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+            e.preventDefault();
+            const direction = e.deltaY > 0 ? 1 : -1;
+            grid.scrollBy({ left: direction * grid.clientWidth, behavior: 'smooth' });
+        };
+        grid.addEventListener('wheel', this._wheelHandler, { passive: false });
     },
 
     bindEvents() {
