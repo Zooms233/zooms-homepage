@@ -376,11 +376,11 @@ const Shortcuts = {
         this._wheelHandler = (e) => {
             if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
             e.preventDefault();
+            const pageWidth = grid.clientWidth;
+            const currentPage = Math.round(grid.scrollLeft / pageWidth);
             const direction = e.deltaY > 0 ? 1 : -1;
-            grid.style.scrollSnapType = 'none';
-            grid.scrollBy({ left: direction * grid.clientWidth, behavior: 'smooth' });
-            clearTimeout(this._snapRestore);
-            this._snapRestore = setTimeout(() => { grid.style.scrollSnapType = ''; }, 500);
+            const target = (currentPage + direction) * pageWidth;
+            grid.scrollLeft = target;
         };
         grid.addEventListener('wheel', this._wheelHandler, { passive: false });
     },
