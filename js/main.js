@@ -757,10 +757,7 @@ const ModalManager = {
         document.getElementById('closeModal').addEventListener('click', () => this.close());
         document.getElementById('cancelShortcut').addEventListener('click', () => this.close());
 
-        // 点击遮罩关闭
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) this.close();
-        });
+        // 不启用点击遮罩关闭，用户需通过关闭/取消按钮退出
 
         // 表单提交
         this.form.addEventListener('submit', (e) => {

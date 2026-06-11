@@ -628,6 +628,7 @@ body::before {
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
+    z-index: 3;
 }
 
 .edit-mode .shortcut-card:hover .shortcut-actions {
