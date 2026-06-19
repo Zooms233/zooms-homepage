@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>New Tab</title>
+    <style>
+      /* 预设背景色，防止白色闪光（重定向到内置主页前） */
+      @media (prefers-color-scheme: dark) {
+        html { background-color: #1a1a1a; }
+      }
+      @media (prefers-color-scheme: light) {
+        html { background-color: #ffffff; }
+      }
+    </style>
+    <!-- 立即隐藏文档，避免重定向前的白闪 -->
+    <script src="early.js"></script>
+  </head>
+  <body>
+    <!-- 重定向 shim：无可见内容，立刻跳转到内置主页或自定义网址 -->
+    <script src="newtab.js"></script>
+  </body>
+</html>
