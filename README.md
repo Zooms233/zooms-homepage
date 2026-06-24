@@ -1,4 +1,4 @@
-# Zoom's Homepage
+# Zooms' Homepage
 
 个人浏览器主页 / 新标签页，纯原生 HTML/CSS/JavaScript 构建，无构建系统、无包管理器。既可作为 **Chrome 扩展**加载（接管新标签页、离线可用），也可作为普通静态站点部署到 GitHub Pages。
 
