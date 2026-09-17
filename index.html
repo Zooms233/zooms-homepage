@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.loli.net">
     <link rel="preconnect" href="https://gstatic.loli.net" crossorigin>
     <link href="https://fonts.loli.net/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/style.css?v=10">
     <!-- Lucide Icons（本地打包，满足扩展 MV3 CSP 且离线可用） -->
     <script src="vendor/lucide.min.js"></script>
 </head>
@@ -49,29 +49,8 @@
                 </button>
             </div>
 
-            <!-- 搜索引擎切换 -->
-            <div class="search-engines" id="searchEngines">
-                <button class="engine-btn active" data-engine="google">
-                    <span class="engine-icon">G</span>
-                    Google
-                </button>
-                <button class="engine-btn" data-engine="baidu">
-                    <span class="engine-icon">B</span>
-                    百度
-                </button>
-                <button class="engine-btn" data-engine="bing">
-                    <span class="engine-icon">b</span>
-                    Bing
-                </button>
-                <button class="engine-btn" data-engine="github">
-                    <span class="engine-icon">⚡</span>
-                    GitHub
-                </button>
-                <button class="engine-btn" data-engine="bilibili">
-                    <span class="engine-icon">▶</span>
-                    B站
-                </button>
-            </div>
+            <!-- 搜索引擎切换（由JS动态生成） -->
+            <div class="search-engines" id="searchEngines"></div>
         </div>
 
         <!-- 快捷方式区域 -->
@@ -204,6 +183,6 @@
     <input type="file" id="fileInput" accept=".json" style="display: none;">
     <input type="file" id="bgFileInput" accept="image/*" style="display: none;">
 
-    <script src="js/main.js?v=7"></script>
+    <script src="js/main.js?v=10"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@ const DEFAULT_ENGINES = [
     {
         id: 'github',
         name: 'GitHub',
-        icon: '<',
+        icon: '>',
         url: 'https://github.com/search?q='
     },
     {
@@ -59,6 +59,19 @@ const DEFAULT_SHORTCUTS = [
     { name: 'Google', url: 'https://google.com', icon: '🔍' },
     { name: '掘金', url: 'https://juejin.cn', icon: '💎' }
 ];
+
+// 快捷方式上限（2 页 × 12 个）
+const MAX_SHORTCUTS = 24;
+
+// 编辑/删除小图标（卡片与管理列表共用）
+const ICON_EDIT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+</svg>`;
+const ICON_DELETE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+</svg>`;
 
 // ============================================
 // 工具函数
@@ -89,22 +102,30 @@ function setStorage(key, value) {
 }
 
 /**
- * 获取网站favicon URL
- */
-function getFaviconUrl(url) {
-    try {
-        const domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-    } catch {
-        return null;
-    }
-}
-
-/**
  * 获取名称首字母作为图标
  */
 function getInitialIcon(name) {
     return name.charAt(0).toUpperCase();
+}
+
+/**
+ * Blob 转 Data URL（导出配置时内嵌图片用）
+ */
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+    });
+}
+
+/**
+ * Data URL 转 Blob（导入配置时还原图片用）
+ */
+async function dataURLToBlob(dataURL) {
+    const resp = await fetch(dataURL);
+    return resp.blob();
 }
 
 // ============================================
@@ -120,20 +141,14 @@ const ThemeManager = {
         if (savedTheme === 'light' || savedTheme === 'dark') {
             // 旧版兼容：直接存的是 light/dark
             this.themeMode = savedTheme;
-            this.currentTheme = savedTheme;
         } else if (savedTheme && savedTheme.mode) {
             // 新版：存储 { mode: 'light'|'dark'|'system' }
             this.themeMode = savedTheme.mode;
-            if (savedTheme.mode === 'system') {
-                this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            } else {
-                this.currentTheme = savedTheme.mode;
-            }
         } else {
             // 无保存记录 → 跟随系统
             this.themeMode = 'system';
-            this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
+        this.currentTheme = this.resolveTheme(this.themeMode);
         this.applyTheme();
 
         // 监听系统主题变化（仅 system 模式响应）
@@ -145,24 +160,16 @@ const ThemeManager = {
         });
     },
 
-    setMode(mode) {
-        this.themeMode = mode;
-        if (mode === 'system') {
-            this.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            setStorage(STORAGE_KEYS.THEME, { mode: 'system' });
-        } else {
-            this.currentTheme = mode;
-            setStorage(STORAGE_KEYS.THEME, { mode: mode });
-        }
-        this.applyTheme();
+    resolveTheme(mode) {
+        if (mode !== 'system') return mode;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     },
 
-    toggle() {
-        // 快捷切换：在亮色/暗色之间切换（退出 system 模式）
-        this.themeMode = this.currentTheme === 'light' ? 'dark' : 'light';
-        this.currentTheme = this.themeMode;
+    setMode(mode) {
+        this.themeMode = mode;
+        this.currentTheme = this.resolveTheme(mode);
+        setStorage(STORAGE_KEYS.THEME, { mode });
         this.applyTheme();
-        setStorage(STORAGE_KEYS.THEME, { mode: this.themeMode });
     },
 
     applyTheme() {
@@ -271,7 +278,7 @@ const Shortcuts = {
     },
 
     add(name, url, icon = '') {
-        if (this.shortcuts.length >= 24) return;
+        if (this.shortcuts.length >= MAX_SHORTCUTS) return;
         const pageCount = [0, 0];
         this.shortcuts.forEach(s => { if (s.page < 2) pageCount[s.page]++; });
         const page = pageCount[0] < 12 ? 0 : 1;
@@ -317,32 +324,19 @@ const Shortcuts = {
             grid.classList.remove('no-animation');
         }
 
-        const MAX_SHORTCUTS = 24;
         const pages = [[], []];
         this.shortcuts.forEach((s, i) => { const p = s.page || 0; if (p < 2) pages[p].push({ s, i }); });
-        if (pages[0].length === 0 && pages[1].length === 0) pages[0] = [];
 
-        const pagesHtml = pages.filter((_, idx) => idx === 0 || pages[idx].length > 0 || (idx === 1 && pages[0].length >= 12)).map((pageItems, pageIdx) => {
-            const baseIndex = pageIdx === 0 ? 0 : pages[0].length;
+        const pagesHtml = pages.filter((_, idx) => idx === 0 || pages[idx].length > 0 || (idx === 1 && pages[0].length >= 12)).map((pageItems) => {
             const cardsHtml = pageItems.map((item, i) => {
-                const shortcut = item.s || item;
-                const index = item.i !== undefined ? item.i : (baseIndex + i);
+                const shortcut = item.s;
+                const index = item.i;
                 const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
                 return `
-                    <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" target="_self" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${i}">
+                    <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${i}">
                         <div class="shortcut-actions">
-                            <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                            </button>
-                            <button class="shortcut-action-btn delete" data-index="${index}" title="删除">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
+                            <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">${ICON_EDIT}</button>
+                            <button class="shortcut-action-btn delete" data-index="${index}" title="删除">${ICON_DELETE}</button>
                         </div>
                         <div class="shortcut-icon">${iconContent}</div>
                         <span class="shortcut-name">${shortcut.name}</span>
@@ -542,18 +536,8 @@ const Shortcuts = {
                     <span class="shortcut-manage-name">${shortcut.name}</span>
                 </div>
                 <div class="shortcut-manage-actions">
-                    <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    <button class="shortcut-action-btn delete" data-index="${index}" title="删除">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+                    <button class="shortcut-action-btn edit" data-index="${index}" title="编辑">${ICON_EDIT}</button>
+                    <button class="shortcut-action-btn delete" data-index="${index}" title="删除">${ICON_DELETE}</button>
                 </div>
             </div>
         `).join('');
@@ -580,47 +564,105 @@ const Shortcuts = {
 };
 
 // ============================================
+// 图片存储（IndexedDB，突破 localStorage 5MB 配额）
+// ============================================
+
+const ImageStore = {
+    DB_NAME: 'homepage_db',
+    STORE: 'files',
+    _db: null,
+
+    open() {
+        if (this._db) return Promise.resolve(this._db);
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(this.DB_NAME, 1);
+            req.onupgradeneeded = () => req.result.createObjectStore(this.STORE);
+            req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    async put(key, blob) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE, 'readwrite');
+            tx.objectStore(this.STORE).put(blob, key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    },
+
+    async get(key) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const req = db.transaction(this.STORE).objectStore(this.STORE).get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    async remove(key) {
+        const db = await this.open();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE, 'readwrite');
+            tx.objectStore(this.STORE).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+};
+
+// ============================================
 // 背景管理
 // ============================================
 
 const BackgroundManager = {
     config: {
         mode: 'default',   // 'default' | 'image'
-        imageData: null,    // base64 string
         blur: 4,            // 0-20px
         opacity: 75         // 50-100 (%)
     },
+    _objectUrl: null,       // 当前背景图的 blob URL（运行时）
 
-    init() {
+    async init() {
         const saved = getStorage(STORAGE_KEYS.BACKGROUND, null);
         if (saved) {
             this.config = { ...this.config, ...saved };
         }
-        this.apply();
+        // 迁移旧版数据：base64 图片转存 IndexedDB
+        if (this.config.imageData) {
+            try {
+                const blob = await dataURLToBlob(this.config.imageData);
+                await ImageStore.put('bg', blob);
+            } catch (e) {
+                console.error('背景图片迁移失败:', e);
+            }
+            delete this.config.imageData;
+            this.save();
+        }
+        await this.loadImage();
     },
 
     setMode(mode) {
         this.config.mode = mode;
         this.save();
-        this.apply();
+        this.loadImage();
         this.renderSettings();
     },
 
-    setImage(file) {
-        if (!file || file.size > 2 * 1024 * 1024) {
-            alert('图片大小不能超过 2MB');
+    async setImage(file) {
+        if (!file) return;
+        try {
+            await ImageStore.put('bg', file);   // File 即 Blob，直接入库
+        } catch (e) {
+            console.error('背景图片保存失败:', e);
+            alert('背景图片保存失败，请重试');
             return;
         }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.config.imageData = e.target.result;
-            this.config.mode = 'image';
-            this.save();
-            this.apply();
-            this.renderSettings();
-        };
-        reader.readAsDataURL(file);
+        this.config.mode = 'image';
+        this.save();
+        await this.loadImage();
+        this.renderSettings();
     },
 
     setBlur(px) {
@@ -635,15 +677,19 @@ const BackgroundManager = {
         this.apply();
     },
 
-    reset() {
+    async reset() {
         this.config = {
             mode: 'default',
-            imageData: null,
             blur: 4,
             opacity: 75
         };
+        try {
+            await ImageStore.remove('bg');
+        } catch (e) {
+            console.error('背景图片删除失败:', e);
+        }
         this.save();
-        this.apply();
+        await this.loadImage();
         this.renderSettings();
     },
 
@@ -651,13 +697,30 @@ const BackgroundManager = {
         setStorage(STORAGE_KEYS.BACKGROUND, this.config);
     },
 
+    // 从 IndexedDB 加载背景图片，生成 blob URL 后应用
+    async loadImage() {
+        if (this._objectUrl) {
+            URL.revokeObjectURL(this._objectUrl);
+            this._objectUrl = null;
+        }
+        if (this.config.mode === 'image') {
+            try {
+                const blob = await ImageStore.get('bg');
+                if (blob) this._objectUrl = URL.createObjectURL(blob);
+            } catch (e) {
+                console.error('读取背景图片失败:', e);
+            }
+        }
+        this.apply();
+    },
+
     apply() {
         const bgImage = document.getElementById('bgImage');
         const bgOverlay = document.getElementById('bgOverlay');
         if (!bgImage || !bgOverlay) return;
 
-        if (this.config.mode === 'image' && this.config.imageData) {
-            bgImage.style.backgroundImage = `url(${this.config.imageData})`;
+        if (this.config.mode === 'image' && this._objectUrl) {
+            bgImage.style.backgroundImage = `url(${this._objectUrl})`;
             bgImage.style.filter = `blur(${this.config.blur}px)`;
             bgImage.style.display = 'block';
             bgOverlay.style.opacity = this.config.opacity / 100;
@@ -693,8 +756,8 @@ const BackgroundManager = {
         // 渲染预览
         const preview = document.getElementById('bgPreview');
         if (preview) {
-            if (this.config.mode === 'image' && this.config.imageData) {
-                preview.innerHTML = `<img src="${this.config.imageData}" alt="背景预览">`;
+            if (this.config.mode === 'image' && this._objectUrl) {
+                preview.innerHTML = `<img src="${this._objectUrl}" alt="背景预览">`;
             } else {
                 preview.innerHTML = `<div class="bg-preview-placeholder"><span>默认背景</span></div>`;
             }
@@ -909,53 +972,62 @@ const SettingsManager = {
         });
     },
 
-    exportData() {
-        const data = {
-            theme: getStorage(STORAGE_KEYS.THEME, 'light'),
-            engine: getStorage(STORAGE_KEYS.ENGINE, 'google'),
-            shortcuts: getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS),
-            background: getStorage(STORAGE_KEYS.BACKGROUND, null),
-            exportDate: new Date().toISOString()
-        };
-
+    downloadJson(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `homepage-config-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+    },
+
+    async exportData() {
+        let background = getStorage(STORAGE_KEYS.BACKGROUND, null);
+        if (background) {
+            background = { ...background };
+            delete background.imageData;
+            // 背景图片存于 IndexedDB，导出时转 base64 以便跨设备迁移
+            try {
+                const blob = await ImageStore.get('bg');
+                if (blob) background.imageData = await blobToDataURL(blob);
+            } catch (e) {
+                console.error('背景图片读取失败:', e);
+            }
+        }
+        this.downloadJson({
+            theme: getStorage(STORAGE_KEYS.THEME, 'light'),
+            engine: getStorage(STORAGE_KEYS.ENGINE, 'google'),
+            shortcuts: getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS),
+            background,
+            exportDate: new Date().toISOString()
+        }, `homepage-config-${new Date().toISOString().slice(0, 10)}.json`);
     },
 
     importData() {
         document.getElementById('fileInput').click();
     },
 
-    resetData() {
-        if (confirm('确定要重置所有配置吗？这将恢复默认设置。')) {
-            localStorage.removeItem(STORAGE_KEYS.THEME);
-            localStorage.removeItem(STORAGE_KEYS.ENGINE);
-            localStorage.removeItem(STORAGE_KEYS.SHORTCUTS);
-            localStorage.removeItem(STORAGE_KEYS.BACKGROUND);
-            location.reload();
+    async resetData() {
+        if (!confirm('确定要重置所有配置吗？这将恢复默认设置。')) return;
+        try {
+            await ImageStore.remove('bg');
+        } catch (e) {
+            console.error('背景图片删除失败:', e);
         }
+        localStorage.removeItem(STORAGE_KEYS.THEME);
+        localStorage.removeItem(STORAGE_KEYS.ENGINE);
+        localStorage.removeItem(STORAGE_KEYS.SHORTCUTS);
+        localStorage.removeItem(STORAGE_KEYS.BACKGROUND);
+        location.reload();
     },
 
     exportShortcuts() {
-        const shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
-        const data = {
-            shortcuts: shortcuts,
+        this.downloadJson({
+            shortcuts: getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS),
             exportDate: new Date().toISOString(),
             version: '1.0'
-        };
-
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `homepage-shortcuts-${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        }, `homepage-shortcuts-${new Date().toISOString().slice(0, 10)}.json`);
     },
 
     importShortcuts() {
@@ -1074,24 +1146,16 @@ const FileImportHandler = {
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
                 try {
                     const data = JSON.parse(event.target.result);
 
                     if (data.theme) {
                         setStorage(STORAGE_KEYS.THEME, data.theme);
                         // 兼容旧版（字符串）和新版（对象）格式
-                        if (typeof data.theme === 'string') {
-                            ThemeManager.themeMode = data.theme;
-                            ThemeManager.currentTheme = data.theme;
-                        } else if (data.theme.mode) {
-                            ThemeManager.themeMode = data.theme.mode;
-                            if (data.theme.mode === 'system') {
-                                ThemeManager.currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                            } else {
-                                ThemeManager.currentTheme = data.theme.mode;
-                            }
-                        }
+                        const mode = typeof data.theme === 'string' ? data.theme : (data.theme.mode || 'system');
+                        ThemeManager.themeMode = mode;
+                        ThemeManager.currentTheme = ThemeManager.resolveTheme(mode);
                         ThemeManager.applyTheme();
                     }
 
@@ -1107,8 +1171,16 @@ const FileImportHandler = {
                     }
 
                     if (data.background) {
-                        setStorage(STORAGE_KEYS.BACKGROUND, data.background);
-                        BackgroundManager.config = { ...BackgroundManager.config, ...data.background };
+                        const bg = { ...data.background };
+                        // 兼容导出文件中内嵌的 base64 图片，转存 IndexedDB
+                        if (bg.imageData) {
+                            const blob = await dataURLToBlob(bg.imageData);
+                            await ImageStore.put('bg', blob);
+                            delete bg.imageData;
+                        }
+                        setStorage(STORAGE_KEYS.BACKGROUND, bg);
+                        BackgroundManager.config = { ...BackgroundManager.config, ...bg };
+                        await BackgroundManager.loadImage();
                         BackgroundManager.apply();
                     }
 

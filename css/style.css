@@ -330,13 +330,6 @@ body::before {
     background-clip: text;
 }
 
-.tagline {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin-top: 0.5rem;
-    font-weight: 400;
-}
-
 /* ============================================
    搜索区域
    ============================================ */
