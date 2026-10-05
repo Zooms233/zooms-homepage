@@ -635,6 +635,24 @@ body:not(.edit-mode) .shortcut-card.add-shortcut {
     transform: scale(1.05);
 }
 
+/* 拖拽时临时补出的下一页落点 */
+.shortcuts-page.drag-placeholder {
+    display: flex;
+    min-height: 140px;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.shortcuts-page.drag-placeholder .drop-hint {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--card-border);
+    border-radius: 16px;
+}
+
 .shortcut-action-btn {
     width: 24px;
     height: 24px;

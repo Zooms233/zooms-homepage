@@ -594,6 +594,8 @@ const Shortcuts = {
                 this._dragScrollDir = -1;
             } else if (rect.right - e.clientX < edge) {
                 this._dragScrollDir = 1;
+                // 下一页尚未渲染时，临时补一个落点页，保证能拖过去
+                this.ensureNextPageSlot(grid);
             } else {
                 this._dragScrollDir = 0;
             }
@@ -643,7 +645,26 @@ const Shortcuts = {
             grid.style.scrollSnapType = '';
             grid.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
             grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            // 清理临时落点页，并校正滚动位置
+            grid.querySelectorAll('.drag-placeholder').forEach(el => el.remove());
+            const pageWidth = grid.clientWidth;
+            const maxScroll = Math.max(0, (grid.children.length - 1) * pageWidth);
+            if (grid.scrollLeft > maxScroll) grid.scrollLeft = maxScroll;
         });
+    },
+
+    // 拖拽到右边缘时，若下一页还没渲染，动态补一个空白页作为落点
+    ensureNextPageSlot(grid) {
+        const pageWidth = grid.clientWidth;
+        const currentPage = Math.round(grid.scrollLeft / pageWidth);
+        if (currentPage + 1 >= MAX_PAGES) return;
+        if (grid.children.length > currentPage + 1) return;
+        const hint = `松手放到第 ${currentPage + 2} 页`;
+        grid.insertAdjacentHTML('beforeend', `
+            <div class="shortcuts-page drag-placeholder">
+                <div class="drop-hint">${hint}</div>
+            </div>
+        `);
     },
 
     reorder(fromIndex, toIndex) {
