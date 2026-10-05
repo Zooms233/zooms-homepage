@@ -50,15 +50,27 @@ const DEFAULT_ENGINES = [
 
 // 默认快捷方式配置
 const DEFAULT_SHORTCUTS = [
-    { name: 'GitHub', url: 'https://github.com', icon: '🐙' },
-    { name: 'B站', url: 'https://www.bilibili.com', icon: '📺' },
-    { name: '知乎', url: 'https://www.zhihu.com', icon: '💡' },
-    { name: '微博', url: 'https://weibo.com', icon: '📱' },
-    { name: 'Twitter', url: 'https://twitter.com', icon: '🐦' },
-    { name: 'YouTube', url: 'https://youtube.com', icon: '🎬' },
-    { name: 'Google', url: 'https://google.com', icon: '🔍' },
-    { name: '掘金', url: 'https://juejin.cn', icon: '💎' }
+    { name: 'GitHub', url: 'https://github.com', icon: '' },
+    { name: 'B站', url: 'https://www.bilibili.com', icon: '' },
+    { name: '知乎', url: 'https://www.zhihu.com', icon: '' },
+    { name: '微博', url: 'https://weibo.com', icon: '' },
+    { name: 'Twitter', url: 'https://twitter.com', icon: '' },
+    { name: 'YouTube', url: 'https://youtube.com', icon: '' },
+    { name: 'Google', url: 'https://google.com', icon: '' },
+    { name: '掘金', url: 'https://juejin.cn', icon: '' }
 ];
+
+// 旧版默认快捷方式使用的 emoji，用于一次性迁移为自动 favicon
+const LEGACY_DEFAULT_ICONS = {
+    'https://github.com': '🐙',
+    'https://www.bilibili.com': '📺',
+    'https://www.zhihu.com': '💡',
+    'https://weibo.com': '📱',
+    'https://twitter.com': '🐦',
+    'https://youtube.com': '🎬',
+    'https://google.com': '🔍',
+    'https://juejin.cn': '💎'
+};
 
 // 快捷方式分页配置（2 页 × 20 个）
 const SHORTCUTS_PER_PAGE = 20;
@@ -109,6 +121,121 @@ function setStorage(key, value) {
 function getInitialIcon(name) {
     return name.charAt(0).toUpperCase();
 }
+
+/**
+ * 根据网址生成 favicon 图标地址（网站自身优先，第三方服务兜底）
+ */
+function getFaviconUrl(url) {
+    try {
+        const u = new URL(url);
+        return {
+            host: u.hostname,
+            primary: `${u.origin}/favicon.ico`,
+            fallback: `https://favicon.im/${u.hostname}`
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 把抓取到的图标缩放为 32px PNG 的 data URL（减小体积，便于随快捷方式存储 / 导出）
+ */
+async function blobToFaviconDataURL(blob) {
+    try {
+        const url = URL.createObjectURL(blob);
+        const img = await new Promise((resolve, reject) => {
+            const im = new Image();
+            im.onload = () => resolve(im);
+            im.onerror = reject;
+            im.src = url;
+        });
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const w = img.naturalWidth || size;
+        const h = img.naturalHeight || size;
+        const scale = Math.min(size / w, size / h);
+        const dw = Math.max(1, Math.round(w * scale));
+        const dh = Math.max(1, Math.round(h * scale));
+        ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+        URL.revokeObjectURL(url);
+        const dataURL = canvas.toDataURL('image/png');
+        return dataURL.length > 30 ? dataURL : await blobToDataURL(blob);
+    } catch {
+        return blobToDataURL(blob);
+    }
+}
+
+/**
+ * 抓取远程 favicon 并存到对应快捷方式上（就地保存，无需重渲染）
+ */
+async function captureFavicon(index, host, url) {
+    const shortcut = Shortcuts.shortcuts[index];
+    if (!shortcut || shortcut.favicon) return;
+    const fav = getFaviconUrl(shortcut.url);
+    if (!fav || fav.host !== host) return;
+    try {
+        const resp = await fetch(url, { mode: 'no-cors' });
+        const blob = await resp.blob();
+        if (!blob || blob.size === 0) return;
+        shortcut.favicon = await blobToFaviconDataURL(blob);
+        Shortcuts.save();
+    } catch { /* 抓取失败下次再试 */ }
+}
+
+/**
+ * 生成快捷方式图标 HTML：自定义图标 > 已存 favicon > 远程 favicon > 首字母
+ */
+function getIconHtml(shortcut, index) {
+    if (shortcut.icon) return shortcut.icon;
+    if (shortcut.favicon) return `<img class="favicon-img" src="${shortcut.favicon}" data-initial="${getInitialIcon(shortcut.name)}" alt="" loading="lazy">`;
+    const fav = getFaviconUrl(shortcut.url);
+    // 连续失败 2 次后不再抓取，直接用首字母
+    if (!fav || (shortcut.faviconFail || 0) >= 2) return getInitialIcon(shortcut.name);
+    const initial = getInitialIcon(shortcut.name);
+    return `<img class="favicon-img" src="${fav.primary}" data-index="${index}" data-host="${fav.host}" data-fallback="${fav.fallback}" data-initial="${initial}" alt="" loading="lazy">`;
+}
+
+/**
+ * 记录一次 favicon 抓取失败，累计达 2 次后放弃抓取
+ */
+function markFaviconFail(index) {
+    const shortcut = Shortcuts.shortcuts[index];
+    if (!shortcut || shortcut.favicon) return;
+    shortcut.faviconFail = (shortcut.faviconFail || 0) + 1;
+    Shortcuts.save();
+}
+
+/**
+ * favicon 加载失败时自动降级：先试第三方服务，再退回首字母
+ */
+document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!img.classList || !img.classList.contains('favicon-img')) return;
+    if (img.dataset.fallback) {
+        img.src = img.dataset.fallback;
+        img.removeAttribute('data-fallback');
+        return;
+    }
+    // 两个来源都失败，记一次失败并回退首字母
+    markFaviconFail(Number(img.dataset.index));
+    const span = document.createElement('span');
+    span.textContent = img.dataset.initial || '?';
+    img.replaceWith(span);
+}, true);
+
+/**
+ * favicon 加载成功后抓取并缓存（load 不冒泡，用捕获阶段监听）
+ */
+document.addEventListener('load', (e) => {
+    const img = e.target;
+    if (img.classList && img.classList.contains('favicon-img') && img.dataset.host) {
+        captureFavicon(Number(img.dataset.index), img.dataset.host, img.currentSrc || img.src);
+    }
+}, true);
 
 /**
  * Blob 转 Data URL（导出配置时内嵌图片用）
@@ -264,6 +391,12 @@ const Shortcuts = {
         this.shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
         // 迁移旧数据：给没有 page 属性的快捷方式按顺序分配页码
         this.shortcuts.forEach((s, i) => { if (s.page === undefined) s.page = Math.min(Math.floor(i / SHORTCUTS_PER_PAGE), MAX_PAGES - 1); });
+        // 迁移旧数据：默认快捷方式的 emoji 清空，改用自动 favicon
+        let migrated = false;
+        this.shortcuts.forEach(s => {
+            if (s.icon && LEGACY_DEFAULT_ICONS[s.url] === s.icon) { s.icon = ''; migrated = true; }
+        });
+        if (migrated) this.save();
         this.render();
         this.initDragAndDrop();
     },
@@ -291,8 +424,14 @@ const Shortcuts = {
 
     edit(index, name, url, icon = '') {
         if (index >= 0 && index < this.shortcuts.length) {
-            const page = this.shortcuts[index].page;
-            this.shortcuts[index] = { name, url, icon, page };
+            const prev = this.shortcuts[index];
+            const sameUrl = prev.url === url;
+            // 网址未变则保留已抓取的图标，否则重新抓取
+            this.shortcuts[index] = {
+                name, url, icon, page: prev.page,
+                favicon: sameUrl ? prev.favicon : '',
+                faviconFail: 0   // 编辑保存时重置，方便手动重试
+            };
             this.save();
             this.render();
         }
@@ -333,7 +472,7 @@ const Shortcuts = {
             const cardsHtml = pageItems.map((item, i) => {
                 const shortcut = item.s;
                 const index = item.i;
-                const iconContent = shortcut.icon || getInitialIcon(shortcut.name);
+                const iconContent = getIconHtml(shortcut, index);
                 return `
                     <a href="${shortcut.url}" class="shortcut-card" data-index="${index}" title="${shortcut.name}" draggable="${this.editMode}" style="--i: ${i}">
                         <div class="shortcut-actions">
@@ -534,7 +673,7 @@ const Shortcuts = {
         container.innerHTML = this.shortcuts.map((shortcut, index) => `
             <div class="shortcut-manage-item">
                 <div class="shortcut-manage-info">
-                    <div class="shortcut-manage-icon">${shortcut.icon || getInitialIcon(shortcut.name)}</div>
+                    <div class="shortcut-manage-icon">${getIconHtml(shortcut, index)}</div>
                     <span class="shortcut-manage-name">${shortcut.name}</span>
                 </div>
                 <div class="shortcut-manage-actions">
