@@ -36,9 +36,11 @@
     --search-border: #e5e5e5;
     --search-focus: #d97706;
 
-    /* 快捷方式卡片 */
-    --card-bg: #ffffff;
-    --card-hover: #f9fafb;
+    /* 快捷方式卡片（半透明玻璃，低成本） */
+    --card-bg: rgba(255, 255, 255, 0.5);
+    --card-hover: rgba(255, 255, 255, 0.78);
+    --card-border: rgba(255, 255, 255, 0.55);
+    --card-border-hover: rgba(217, 119, 6, 0.5);
 
     /* 按钮 */
     --btn-primary-bg: #d97706;
@@ -84,8 +86,10 @@
     --search-border: #404040;
     --search-focus: #f59e0b;
 
-    --card-bg: #2d2d2d;
-    --card-hover: #3a3a3a;
+    --card-bg: rgba(45, 45, 45, 0.45);
+    --card-hover: rgba(58, 58, 58, 0.72);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --card-border-hover: rgba(245, 158, 11, 0.5);
 
     --btn-primary-bg: #f59e0b;
     --btn-primary-hover: #d97706;
@@ -344,20 +348,19 @@ body::before {
     width: 100%;
     display: flex;
     align-items: center;
-    background: var(--search-bg);
-    border: 2px solid var(--search-border);
-    border-radius: 16px;
-    padding: 0.75rem 1rem;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-md);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .search-box:focus-within {
-    border-color: var(--search-focus);
-    box-shadow:
-        var(--shadow-lg),
-        0 0 0 4px var(--accent-alpha),
-        0 0 30px -5px var(--accent-alpha);
+    background: var(--card-hover);
+    border-color: var(--card-border-hover);
+    box-shadow: 0 0 0 4px var(--accent-alpha);
 }
 
 .search-icon {
@@ -383,7 +386,7 @@ body::before {
 .search-btn {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: 50%;
     border: none;
     background: var(--accent-primary);
     color: white;
@@ -492,7 +495,7 @@ body::before {
 .shortcuts-page {
     flex: 0 0 100%;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
     gap: 1rem;
     scroll-snap-align: start;
     align-items: start;
@@ -501,109 +504,78 @@ body::before {
 
 .shortcut-card {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    padding: 1.25rem 0.75rem;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem 0.45rem 0.45rem;
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: 100px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
     color: var(--text-primary);
     position: relative;
-    overflow: hidden;
-}
-
-/* 光泽扫过效果 */
-.shortcut-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.08),
-        transparent
-    );
-    transition: left 0.6s ease;
-    z-index: 1;
-}
-
-.shortcut-card:hover::before {
-    left: 100%;
+    min-width: 0;
+    transition: background 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
 }
 
 .shortcut-card:hover {
     background: var(--card-hover);
-    border-color: var(--accent-primary);
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-lg), 0 0 20px -8px var(--accent-alpha);
+    border-color: var(--card-border-hover);
+    transform: translateY(-3px);
 }
 
 .shortcut-card:active {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-1px) scale(0.985);
 }
 
+/* 图标 */
 .shortcut-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--accent-alpha), var(--accent-light));
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent-alpha));
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
+    font-size: 1.0625rem;
     color: var(--accent-primary);
     font-weight: 600;
-    position: relative;
-    z-index: 2;
+    flex-shrink: 0;
 }
 
 .shortcut-name {
+    flex: 1;
+    min-width: 0;
     font-size: 0.8125rem;
     color: var(--text-secondary);
-    text-align: center;
-    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .shortcut-name {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 /* 添加快捷方式按钮 */
 .shortcut-card.add-shortcut {
     border-style: dashed;
-    background: transparent;
+    animation-duration: 0.2s;
+    animation-delay: 0.05s;
 }
 
-.shortcut-card.add-shortcut:hover {
-    background: var(--accent-alpha);
-    border-color: var(--accent-primary);
-}
-
-/* 添加按钮脉冲提示 */
-@keyframes pulse-border {
-    0%, 100% { border-color: var(--border-color); }
-    50% { border-color: var(--accent-primary); }
-}
-
-.shortcut-card.add-shortcut {
-    animation: pulse-border 3s ease-in-out infinite;
-}
-
-.shortcut-card.add-shortcut:hover {
-    animation: none;
+/* 仅在编辑模式显示添加按钮 */
+body:not(.edit-mode) .shortcut-card.add-shortcut {
+    display: none;
 }
 
 .shortcut-card.add-shortcut .shortcut-icon {
     background: transparent;
-    font-size: 2rem;
+    font-size: 1.375rem;
     color: var(--text-tertiary);
 }
 
@@ -614,14 +586,19 @@ body::before {
 /* 快捷方式编辑/删除按钮 */
 .shortcut-actions {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 50%;
+    right: 0.4rem;
+    transform: translateY(-50%);
     display: flex;
     gap: 0.25rem;
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
     z-index: 3;
+}
+
+.edit-mode .shortcut-card .shortcut-name {
+    padding-right: 3.25rem;
 }
 
 .edit-mode .shortcut-card:hover .shortcut-actions {
@@ -1294,18 +1271,14 @@ body::before {
     }
 
     .shortcuts-page {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 0.75rem;
     }
 
-    .shortcut-card {
-        padding: 1rem 0.5rem;
-    }
-
     .shortcut-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1.25rem;
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
     }
 
     .settings-btn {

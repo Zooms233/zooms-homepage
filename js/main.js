@@ -60,8 +60,10 @@ const DEFAULT_SHORTCUTS = [
     { name: '掘金', url: 'https://juejin.cn', icon: '💎' }
 ];
 
-// 快捷方式上限（2 页 × 12 个）
-const MAX_SHORTCUTS = 24;
+// 快捷方式分页配置（2 页 × 20 个）
+const SHORTCUTS_PER_PAGE = 20;
+const MAX_PAGES = 2;
+const MAX_SHORTCUTS = SHORTCUTS_PER_PAGE * MAX_PAGES;
 
 // 编辑/删除小图标（卡片与管理列表共用）
 const ICON_EDIT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -261,7 +263,7 @@ const Shortcuts = {
     init() {
         this.shortcuts = getStorage(STORAGE_KEYS.SHORTCUTS, DEFAULT_SHORTCUTS);
         // 迁移旧数据：给没有 page 属性的快捷方式按顺序分配页码
-        this.shortcuts.forEach((s, i) => { if (s.page === undefined) s.page = Math.min(Math.floor(i / 12), 1); });
+        this.shortcuts.forEach((s, i) => { if (s.page === undefined) s.page = Math.min(Math.floor(i / SHORTCUTS_PER_PAGE), MAX_PAGES - 1); });
         this.render();
         this.initDragAndDrop();
     },
@@ -279,9 +281,9 @@ const Shortcuts = {
 
     add(name, url, icon = '') {
         if (this.shortcuts.length >= MAX_SHORTCUTS) return;
-        const pageCount = [0, 0];
-        this.shortcuts.forEach(s => { if (s.page < 2) pageCount[s.page]++; });
-        const page = pageCount[0] < 12 ? 0 : 1;
+        const pageCount = new Array(MAX_PAGES).fill(0);
+        this.shortcuts.forEach(s => { if (s.page < MAX_PAGES) pageCount[s.page]++; });
+        const page = pageCount[0] < SHORTCUTS_PER_PAGE ? 0 : 1;
         this.shortcuts.push({ name, url, icon, page });
         this.save();
         this.render();
@@ -324,10 +326,10 @@ const Shortcuts = {
             grid.classList.remove('no-animation');
         }
 
-        const pages = [[], []];
-        this.shortcuts.forEach((s, i) => { const p = s.page || 0; if (p < 2) pages[p].push({ s, i }); });
+        const pages = Array.from({ length: MAX_PAGES }, () => []);
+        this.shortcuts.forEach((s, i) => { const p = s.page || 0; if (p < MAX_PAGES) pages[p].push({ s, i }); });
 
-        const pagesHtml = pages.filter((_, idx) => idx === 0 || pages[idx].length > 0 || (idx === 1 && pages[0].length >= 12)).map((pageItems) => {
+        const pagesHtml = pages.filter((_, idx) => idx === 0 || pages[idx].length > 0 || (idx === 1 && pages[0].length >= SHORTCUTS_PER_PAGE)).map((pageItems) => {
             const cardsHtml = pageItems.map((item, i) => {
                 const shortcut = item.s;
                 const index = item.i;
@@ -345,7 +347,7 @@ const Shortcuts = {
             }).join('');
 
             // 当前页未满且未达上限时显示添加按钮
-            const showAdd = pageItems.length < 12 && this.shortcuts.length < MAX_SHORTCUTS;
+            const showAdd = pageItems.length < SHORTCUTS_PER_PAGE && this.shortcuts.length < MAX_SHORTCUTS;
             const addBtnHtml = showAdd ? `
                 <div class="shortcut-card add-shortcut" id="addShortcutBtn" style="--i: ${pageItems.length}">
                     <div class="shortcut-icon">+</div>
@@ -440,7 +442,7 @@ const Shortcuts = {
                 if (!page) return;
                 const pageCards = page.querySelectorAll('.shortcut-card:not(.add-shortcut)');
                 const pageIdx = [...grid.children].indexOf(page);
-                toIndex = pageIdx * 12 + pageCards.length;
+                toIndex = pageIdx * SHORTCUTS_PER_PAGE + pageCards.length;
             }
             if (toIndex === this.dragIndex) return;
             grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
