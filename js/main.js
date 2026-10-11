@@ -77,6 +77,9 @@ const SHORTCUTS_PER_PAGE = 20;
 const MAX_PAGES = 2;
 const MAX_SHORTCUTS = SHORTCUTS_PER_PAGE * MAX_PAGES;
 
+// 图标抓取数据版本：升级后旧数据（可能存了第三方占位图）会被重新抓取以自愈
+const FAVICON_VERSION = 2;
+
 // 编辑/删除小图标（卡片与管理列表共用）
 const ICON_EDIT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -141,14 +144,19 @@ function getFaviconUrl(url) {
 
 /**
  * 把抓取到的图标缩放为 32px PNG 的 data URL（减小体积，便于随快捷方式存储 / 导出）
+ * 校验失败（非图片、无法解码）返回 null，避免把错误页 / 占位内容存成图标
  */
 async function blobToFaviconDataURL(blob) {
+    if (!blob || blob.size === 0 || blob.size > 512 * 1024) return null;
+    const type = (blob.type || '').toLowerCase();
+    if (type && !type.startsWith('image/')) return null;
+    let url = null;
     try {
-        const url = URL.createObjectURL(blob);
+        url = URL.createObjectURL(blob);
         const img = await new Promise((resolve, reject) => {
             const im = new Image();
             im.onload = () => resolve(im);
-            im.onerror = reject;
+            im.onerror = () => reject(new Error('图片解码失败'));
             im.src = url;
         });
         const size = 32;
@@ -162,29 +170,50 @@ async function blobToFaviconDataURL(blob) {
         const dw = Math.max(1, Math.round(w * scale));
         const dh = Math.max(1, Math.round(h * scale));
         ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
-        URL.revokeObjectURL(url);
         const dataURL = canvas.toDataURL('image/png');
-        return dataURL.length > 30 ? dataURL : await blobToDataURL(blob);
+        return dataURL.length > 30 ? dataURL : null;
     } catch {
-        return blobToDataURL(blob);
+        return null;
+    } finally {
+        if (url) URL.revokeObjectURL(url);
+    }
+}
+
+/**
+ * 识别 icon.horse 的“首字母占位图”
+ * 该服务抓不到图标时会按域名首字母生成灰色头像，同首字母的不同域名结果完全一致
+ * （实测 portal.azure.com 与 platform.deepseek.com 返回逐字节相同的图片）
+ * 故用一个同首字母的必然不存在域名做对照，内容一致即判定为占位图
+ */
+async function isPlaceholderFromIconHorse(dataURL, hostname) {
+    if (!dataURL || !hostname) return false;
+    const first = hostname[0].toLowerCase();
+    try {
+        const resp = await fetch(`https://icon.horse/icon/${first}no-such-site-zz9.com`);
+        if (!resp.ok) return false;
+        const probeDataURL = await blobToFaviconDataURL(await resp.blob());
+        return !!probeDataURL && probeDataURL === dataURL;
+    } catch {
+        return false;   // 探测失败则保守放行，避免误杀真图标
     }
 }
 
 /**
  * 依次尝试多个地址抓取远程图标并转成 data URL
- * 网站自身一般为跨域资源无法读取，故优先用支持 CORS 的第三方服务
+ * 网站自身优先（扩展已申请 host_permissions，可跨域读取），随后是第三方服务
  */
 async function fetchFaviconAsDataURL(shortcut) {
     const fav = getFaviconUrl(shortcut.url);
     if (!fav) return null;
-    // cors 第三方服务优先（可读取），随后是网站自身 / 兜底服务
-    for (const source of [fav.cors, fav.primary, fav.fallback]) {
+    // favicon.im 拿到的多为真图标；icon.horse 可能返回首字母占位图，放到最后并做识别
+    for (const source of [fav.primary, fav.fallback, fav.cors]) {
         try {
-            const resp = await fetch(source, { mode: 'cors' });
+            const resp = await fetch(source);
             if (!resp.ok) continue;
-            const blob = await resp.blob();
-            if (!blob || blob.size === 0) continue;
-            return await blobToFaviconDataURL(blob);
+            const dataURL = await blobToFaviconDataURL(await resp.blob());
+            if (!dataURL) continue;
+            if (source === fav.cors && await isPlaceholderFromIconHorse(dataURL, fav.host)) continue;
+            return dataURL;
         } catch { /* 换下一个来源 */ }
     }
     return null;
@@ -210,20 +239,25 @@ async function fetchAllFavicons() {
     const list = Shortcuts.shortcuts;
     let ok = 0;
     let fail = 0;
+    let changed = false;
     // 逐条处理：页面不动画重渲染，只在完成后统一刷新
     for (let i = 0; i < list.length; i++) {
         const shortcut = list[i];
-        if (shortcut.icon || shortcut.favicon) continue;   // 自定义图标 / 已有缓存则跳过
+        // 自定义图标 / 已按当前版本抓取过的则跳过（版本升级后自动重抓）
+        if (shortcut.icon || shortcut.faviconV === FAVICON_VERSION) continue;
         const dataURL = await fetchFaviconAsDataURL(shortcut);
         if (dataURL) {
             shortcut.favicon = dataURL;
-            shortcut.faviconFail = 0;
+            shortcut.faviconV = FAVICON_VERSION;
             ok++;
+            changed = true;
         } else {
+            // 旧版本存入的可能是第三方占位图，本次抓取失败则清掉，避免继续显示错误图标
+            if (shortcut.favicon) { delete shortcut.favicon; changed = true; }
             fail++;
         }
     }
-    if (ok > 0) Shortcuts.save();
+    if (changed) Shortcuts.save();
     return { ok, fail };
 }
 
@@ -435,7 +469,8 @@ const Shortcuts = {
             // 网址未变则保留已抓取的图标，否则重新抓取
             this.shortcuts[index] = {
                 name, url, icon, page: prev.page,
-                favicon: sameUrl ? prev.favicon : ''
+                favicon: sameUrl ? prev.favicon : '',
+                faviconV: sameUrl ? prev.faviconV : undefined
             };
             this.save();
             this.render();
