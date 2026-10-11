@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.loli.net">
     <link rel="preconnect" href="https://gstatic.loli.net" crossorigin>
     <link href="https://fonts.loli.net/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=18">
+    <link rel="stylesheet" href="css/style.css?v=19">
     <!-- Lucide Icons（本地打包，满足扩展 MV3 CSP 且离线可用） -->
     <script src="vendor/lucide.min.js"></script>
 </head>
@@ -24,6 +24,11 @@
     <!-- 快捷入口编辑模式按钮 -->
     <button class="edit-mode-btn" id="editModeBtn" title="编辑模式">
         <i data-lucide="pencil"></i>
+    </button>
+
+    <!-- 抓取网页图标按钮（仅编辑模式下显示） -->
+    <button class="edit-mode-btn fetch-favicon-btn" id="fetchFaviconBtn" title="抓取网页图标">
+        <i data-lucide="image-down"></i>
     </button>
 
     <!-- 主容器 -->
@@ -168,7 +173,7 @@
                 </div>
                 <div class="form-group">
                     <label for="shortcutIcon">图标（可选）</label>
-                    <input type="text" id="shortcutIcon" placeholder="留空自动获取网站图标，也可输入 emoji">
+                    <input type="text" id="shortcutIcon" placeholder="留空则用自动图标，也可输入 emoji">
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancelShortcut">取消</button>
@@ -183,6 +188,6 @@
     <input type="file" id="fileInput" accept=".json" style="display: none;">
     <input type="file" id="bgFileInput" accept="image/*" style="display: none;">
 
-    <script src="js/main.js?v=18"></script>
+    <script src="js/main.js?v=19"></script>
 </body>
 </html>

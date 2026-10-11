@@ -302,6 +302,50 @@ body::before {
 }
 
 /* ============================================
+   抓取网页图标按钮（仅编辑模式下显示）
+   ============================================ */
+
+.fetch-favicon-btn {
+    right: 8.5rem;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.8);
+}
+
+body.edit-mode .fetch-favicon-btn {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+}
+
+.fetch-favicon-btn:hover i {
+    transform: none;
+}
+
+body.edit-mode .fetch-favicon-btn:hover {
+    transform: scale(1.05);
+}
+
+body.edit-mode .fetch-favicon-btn:active {
+    transform: scale(0.95);
+}
+
+body.edit-mode .fetch-favicon-btn.loading {
+    pointer-events: none;
+    opacity: 0.65;
+}
+
+.fetch-favicon-btn.loading i {
+    animation: icon-spin 0.9s linear infinite;
+}
+
+@keyframes icon-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
    主容器
    ============================================ */
 
@@ -1320,6 +1364,10 @@ body:not(.edit-mode) .shortcut-card.add-shortcut {
         right: 4rem;
         width: 40px;
         height: 40px;
+    }
+
+    .fetch-favicon-btn {
+        right: 7rem;
     }
 }
 
